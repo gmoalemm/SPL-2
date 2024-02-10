@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+//:)
+
 /**
  * This class contains the data that is visible to the player.
  *
