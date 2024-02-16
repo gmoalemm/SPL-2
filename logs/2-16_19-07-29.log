@@ -1,0 +1,67 @@
+[19:07:29.713] [INFO   ] thread bguspl.set.Main.main() starting.
+[19:07:29.723] [SEVERE ] cannot read configuration file config.properties trying from resources.
+[19:07:29.731] [SEVERE ] configuration file was loaded from resources directory.
+[19:07:30.912] [INFO   ] thread dealer starting.
+[19:07:30.913] [INFO   ] thread dealer starting.
+[19:07:31.018] [SEVERE ] placing card 73 in slot 0
+[19:07:31.197] [SEVERE ] placing card 33 in slot 1
+[19:07:31.298] [SEVERE ] placing card 29 in slot 2
+[19:07:31.399] [SEVERE ] placing card 19 in slot 3
+[19:07:31.501] [SEVERE ] placing card 78 in slot 4
+[19:07:31.603] [SEVERE ] placing card 40 in slot 5
+[19:07:31.726] [SEVERE ] placing card 44 in slot 6
+[19:07:31.844] [SEVERE ] placing card 43 in slot 7
+[19:07:31.945] [SEVERE ] placing card 20 in slot 8
+[19:07:32.046] [SEVERE ] placing card 31 in slot 9
+[19:07:32.147] [SEVERE ] placing card 77 in slot 10
+[19:07:32.248] [SEVERE ] placing card 34 in slot 11
+[19:07:47.105] [SEVERE ] key 65 was pressed by player 1
+[19:07:47.106] [SEVERE ] player 1 placing token on slot 4
+[19:07:47.847] [SEVERE ] key 83 was pressed by player 1
+[19:07:47.848] [SEVERE ] player 1 placing token on slot 5
+[19:07:48.159] [SEVERE ] key 68 was pressed by player 1
+[19:07:48.160] [SEVERE ] player 1 placing token on slot 6
+[19:07:50.315] [SEVERE ] key 69 was pressed by player 1
+[19:07:50.915] [SEVERE ] key 69 was pressed by player 1
+[19:07:51.103] [SEVERE ] key 69 was pressed by player 1
+[19:07:51.334] [SEVERE ] key 69 was pressed by player 1
+[19:07:51.558] [SEVERE ] key 69 was pressed by player 1
+[19:07:51.815] [SEVERE ] key 69 was pressed by player 1
+[19:07:52.070] [SEVERE ] key 69 was pressed by player 1
+[19:07:52.526] [SEVERE ] key 69 was pressed by player 1
+[19:07:52.751] [SEVERE ] key 69 was pressed by player 1
+[19:07:53.358] [SEVERE ] key 67 was pressed by player 1
+[19:07:53.607] [SEVERE ] key 88 was pressed by player 1
+[19:07:53.838] [SEVERE ] key 67 was pressed by player 1
+[19:07:56.982] [SEVERE ] key 46 was pressed by player 2
+[19:07:56.983] [SEVERE ] player 2 placing token on slot 10
+[19:07:57.694] [SEVERE ] key 44 was pressed by player 2
+[19:07:57.695] [SEVERE ] player 2 placing token on slot 9
+[19:08:02.431] [SEVERE ] key 87 was pressed by player 1
+[19:08:02.862] [SEVERE ] key 87 was pressed by player 1
+[19:08:03.110] [SEVERE ] key 87 was pressed by player 1
+[19:08:03.342] [SEVERE ] key 87 was pressed by player 1
+[19:08:03.558] [SEVERE ] key 87 was pressed by player 1
+[19:08:03.766] [SEVERE ] key 87 was pressed by player 1
+[19:08:04.590] [SEVERE ] key 65 was pressed by player 1
+[19:08:05.825] [SEVERE ] key 65 was pressed by player 1
+[19:08:06.062] [SEVERE ] key 65 was pressed by player 1
+[19:08:06.478] [SEVERE ] key 65 was pressed by player 1
+[19:08:06.679] [SEVERE ] key 65 was pressed by player 1
+[19:08:06.926] [SEVERE ] key 65 was pressed by player 1
+[19:08:07.190] [SEVERE ] key 65 was pressed by player 1
+[19:08:07.446] [SEVERE ] key 65 was pressed by player 1
+[19:08:07.710] [SEVERE ] key 65 was pressed by player 1
+[19:08:07.955] [SEVERE ] key 65 was pressed by player 1
+[19:08:12.308] [SEVERE ] key 65 was pressed by player 1
+[19:08:12.510] [SEVERE ] key 65 was pressed by player 1
+[19:08:12.726] [SEVERE ] key 65 was pressed by player 1
+[19:08:12.946] [SEVERE ] key 65 was pressed by player 1
+[19:08:13.143] [SEVERE ] key 65 was pressed by player 1
+[19:08:13.574] [SEVERE ] key 65 was pressed by player 1
+[19:08:13.814] [SEVERE ] key 65 was pressed by player 1
+[19:08:14.038] [SEVERE ] key 65 was pressed by player 1
+[19:08:14.238] [SEVERE ] key 65 was pressed by player 1
+[19:08:14.454] [SEVERE ] key 65 was pressed by player 1
+[19:08:14.670] [SEVERE ] key 65 was pressed by player 1
+[19:08:14.902] [SEVERE ] key 65 was pressed by player 1

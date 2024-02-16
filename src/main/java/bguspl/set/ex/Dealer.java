@@ -2,6 +2,7 @@ package bguspl.set.ex;
 
 import bguspl.set.Env;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -50,6 +51,9 @@ public class Dealer implements Runnable {
     @Override
     public void run() {
         env.logger.info("thread " + Thread.currentThread().getName() + " starting.");
+
+        Collections.shuffle(deck);
+
         while (!shouldFinish()) {
             placeCardsOnTable();
             timerLoop();
@@ -61,7 +65,8 @@ public class Dealer implements Runnable {
     }
 
     /**
-     * The inner loop of the dealer thread that runs as long as the countdown did not time out.
+     * The inner loop of the dealer thread that runs as long as the countdown did
+     * not time out.
      */
     private void timerLoop() {
         while (!terminate && System.currentTimeMillis() < reshuffleTime) {
@@ -99,11 +104,18 @@ public class Dealer implements Runnable {
      * Check if any cards can be removed from the deck and placed on the table.
      */
     private void placeCardsOnTable() {
-        // TODO implement
+        int maxSlot = this.env.config.tableSize;
+
+        for (int slot = 0; slot < maxSlot; slot++) {
+            if (this.table.slotToCard[slot] == null) {
+                this.table.placeCard(this.deck.remove(0), slot);
+            }
+        }
     }
 
     /**
-     * Sleep for a fixed amount of time or until the thread is awakened for some purpose.
+     * Sleep for a fixed amount of time or until the thread is awakened for some
+     * purpose.
      */
     private void sleepUntilWokenOrTimeout() {
         // TODO implement
@@ -120,7 +132,12 @@ public class Dealer implements Runnable {
      * Returns all the cards from the table to the deck.
      */
     private void removeAllCardsFromTable() {
-        // TODO implement
+        int maxSlot = this.env.config.tableSize;
+
+        for (int slot = 0; slot < maxSlot; slot++) {
+            this.deck.add(this.table.slotToCard[slot]);
+            this.table.removeCard(slot);
+        }
     }
 
     /**

@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 
 /**
  * This class contains the data that is visible to the player.
- *
+ * 
  * @inv slotToCard[x] == y iff cardToSlot[y] == x
  */
 public class Table {
@@ -29,6 +29,8 @@ public class Table {
      */
     protected final Integer[] cardToSlot; // slot per card (if any)
 
+    protected final boolean[][] tokens; // an array for each slot and in it an array for each player
+
     /**
      * Constructor for testing.
      *
@@ -43,6 +45,8 @@ public class Table {
         this.env = env;
         this.slotToCard = slotToCard;
         this.cardToSlot = cardToSlot;
+        this.tokens = new boolean[this.env.config.tableSize][this.env.config.players];
+
     }
 
     /**
@@ -73,7 +77,7 @@ public class Table {
 
     /**
      * Count the number of cards currently on the table.
-     *
+     * 
      * @return - the number of cards on the table.
      */
     public int countCards() {
@@ -101,7 +105,8 @@ public class Table {
         cardToSlot[card] = slot;
         slotToCard[slot] = card;
 
-        // TODO implement
+        // TODO: probably add synchronization on the arrays
+        this.env.ui.placeCard(card, slot);
     }
 
     /**
@@ -115,7 +120,10 @@ public class Table {
         } catch (InterruptedException ignored) {
         }
 
-        // TODO implement
+        // TODO: probably add synchronization on the arrays
+        cardToSlot[slotToCard[slot]] = null;
+        slotToCard[slot] = null;
+        this.env.ui.removeCard(slot);
     }
 
     /**
@@ -125,7 +133,10 @@ public class Table {
      * @param slot   - the slot on which to place the token.
      */
     public void placeToken(int player, int slot) {
-        // TODO implement
+        // TODO: treat special scenarios (for eample: cannot place a token, etc)
+
+        this.env.ui.placeToken(player, slot);
+        this.tokens[slot][player] = true;
     }
 
     /**
@@ -136,7 +147,12 @@ public class Table {
      * @return - true iff a token was successfully removed.
      */
     public boolean removeToken(int player, int slot) {
-        // TODO implement
+        if (this.tokens[slot][player]) {
+            this.env.ui.removeToken(player, slot);
+            this.tokens[slot][player] = false;
+            return true;
+        }
+
         return false;
     }
 }
