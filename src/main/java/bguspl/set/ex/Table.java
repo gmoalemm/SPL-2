@@ -123,6 +123,13 @@ public class Table {
         // TODO: probably add synchronization on the arrays
         cardToSlot[slotToCard[slot]] = null;
         slotToCard[slot] = null;
+
+        for (int i = 0; i < tokens[slot].length; i++) {
+            if (tokens[slot][i]) {
+                this.removeToken(i, slot);
+            }
+        }
+
         this.env.ui.removeCard(slot);
     }
 
@@ -154,5 +161,17 @@ public class Table {
         }
 
         return false;
+    }
+
+    public int getNumOfTokens(int player) {
+        int count = 0;
+
+        for (int slot = 0; slot < this.env.config.tableSize; slot++) {
+            if (tokens[slot][player]) {
+                count++;
+            }
+        }
+
+        return count;
     }
 }

@@ -53,8 +53,6 @@ public class Player implements Runnable {
 
     private final Dealer dealer;
 
-    private int placedTokens;
-
     /**
      * The class constructor.
      *
@@ -71,7 +69,6 @@ public class Player implements Runnable {
         this.id = id;
         this.human = human;
         this.dealer = dealer; // our addition
-        this.placedTokens = 0;
     }
 
     /**
@@ -134,14 +131,9 @@ public class Player implements Runnable {
      * @param slot - the slot corresponding to the key pressed.
      */
     public void keyPressed(int slot) {
-        // if managed to remove a token then the number of tokens places on the table
-        // decreased
-        if (this.table.removeToken(this.id, slot)) {
-            this.placedTokens--;
-            // else, I can put a token in this slot if I haven't already placed 3
-        } else if (this.placedTokens < 3) {
+        if (!this.table.removeToken(this.id, slot) && table.getNumOfTokens(id) < 3) {
             this.table.placeToken(this.id, slot);
-            this.placedTokens++;
+            System.out.println("placed token");
         }
     }
 
@@ -152,7 +144,11 @@ public class Player implements Runnable {
      * @post - the player's score is updated in the ui.
      */
     public void point() {
-        // TODO implement
+        try {
+            Thread.sleep(this.env.config.penaltyFreezeMillis);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
         int ignored = table.countCards(); // this part is just for demonstration in the unit tests
         env.ui.setScore(id, ++score);
@@ -162,7 +158,11 @@ public class Player implements Runnable {
      * Penalize a player and perform other related actions.
      */
     public void penalty() {
-        // TODO implement
+        try {
+            Thread.sleep(this.env.config.penaltyFreezeMillis);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     public int score() {

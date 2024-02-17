@@ -56,10 +56,12 @@ public class Dealer implements Runnable {
 
         while (!shouldFinish()) {
             placeCardsOnTable();
+            updateTimerDisplay(true);
             timerLoop();
-            updateTimerDisplay(false);
+            // updateTimerDisplay(false);
             removeAllCardsFromTable();
         }
+
         announceWinners();
         env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
     }
@@ -82,6 +84,15 @@ public class Dealer implements Runnable {
      */
     public void terminate() {
         // TODO implement
+
+        // TODO: handle cases when a player has not finished doing something when this
+        // method is called
+
+        for (Player player : this.players) {
+            player.terminate();
+        }
+
+        this.terminate = true;
     }
 
     /**
@@ -119,13 +130,27 @@ public class Dealer implements Runnable {
      */
     private void sleepUntilWokenOrTimeout() {
         // TODO implement
+
+        try {
+            Thread.sleep(25);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
      * Reset and/or update the countdown and the countdown display.
      */
     private void updateTimerDisplay(boolean reset) {
-        // TODO implement
+        if (reset) {
+            // reshuffleTime = System.currentTimeMillis() +
+            // this.env.config.turnTimeoutMillis;
+            reshuffleTime = System.currentTimeMillis() + 20 * 1000;
+        } else {
+            long timeLeft = reshuffleTime - System.currentTimeMillis();
+
+            this.env.ui.setCountdown(timeLeft, timeLeft < this.env.config.turnTimeoutWarningMillis);
+        }
     }
 
     /**
