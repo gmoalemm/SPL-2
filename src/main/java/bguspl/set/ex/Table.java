@@ -5,6 +5,8 @@ import bguspl.set.Env;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.stream.Collectors;
 
 /**
@@ -31,6 +33,8 @@ public class Table {
 
     protected final boolean[][] tokens; // an array for each slot and in it an array for each player
 
+    protected Queue<Integer> waitingPlayers;
+
     /**
      * Constructor for testing.
      *
@@ -46,6 +50,7 @@ public class Table {
         this.slotToCard = slotToCard;
         this.cardToSlot = cardToSlot;
         this.tokens = new boolean[this.env.config.tableSize][this.env.config.players];
+        this.waitingPlayers = new ArrayBlockingQueue<Integer>(this.env.config.players);
 
     }
 
@@ -144,6 +149,10 @@ public class Table {
 
         this.env.ui.placeToken(player, slot);
         this.tokens[slot][player] = true;
+
+        if (getNumOfTokens(player) == 3) {
+            this.waitingPlayers.add(player);
+        }
     }
 
     /**
@@ -157,6 +166,7 @@ public class Table {
         if (this.tokens[slot][player]) {
             this.env.ui.removeToken(player, slot);
             this.tokens[slot][player] = false;
+
             return true;
         }
 

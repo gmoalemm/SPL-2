@@ -2,6 +2,7 @@ package bguspl.set.ex;
 
 import bguspl.set.Env;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -38,11 +39,15 @@ public class Dealer implements Runnable {
      */
     private long reshuffleTime = Long.MAX_VALUE;
 
+    private long[] freezeTimes;
+
     public Dealer(Env env, Table table, Player[] players) {
         this.env = env;
         this.table = table;
         this.players = players;
         deck = IntStream.range(0, env.config.deckSize).boxed().collect(Collectors.toList());
+
+        freezeTimes = new long[this.players.length];
     }
 
     /**
@@ -51,8 +56,6 @@ public class Dealer implements Runnable {
     @Override
     public void run() {
         env.logger.info("thread " + Thread.currentThread().getName() + " starting.");
-
-        Collections.shuffle(deck);
 
         while (!shouldFinish()) {
             placeCardsOnTable();
@@ -97,7 +100,7 @@ public class Dealer implements Runnable {
 
     /**
      * Check if the game should be terminated or the game end conditions are met.
-     *
+     * 
      * @return true iff the game should be finished.
      */
     private boolean shouldFinish() {
@@ -109,12 +112,50 @@ public class Dealer implements Runnable {
      */
     private void removeCardsFromTable() {
         // TODO implement
+
+        Integer currentPlayer;
+        ArrayList<Integer> currentPlayerTokens = new ArrayList<Integer>(3);
+        int i;
+
+        while (!this.table.waitingPlayers.isEmpty()) {
+            currentPlayer = this.table.waitingPlayers.poll();
+
+            i = 0;
+
+            // find the cards that the current player chose
+            for (int s = 0; s < table.tokens.length; s++) {
+                if (table.tokens[s][currentPlayer]) {
+                    currentPlayerTokens.add(i++, table.slotToCard[s]);
+                }
+            }
+
+            if (!env.util.findSets(currentPlayerTokens, 1).isEmpty()) {
+                this.players[currentPlayer].point();
+
+                for (Integer card : currentPlayerTokens) {
+                    table.removeCard(table.cardToSlot[card]);
+                }
+
+                updateTimerDisplay(true);
+                freezeTimes[currentPlayer] = System.currentTimeMillis() + env.config.pointFreezeMillis;
+            } else {
+                this.players[currentPlayer].penalty();
+
+                for (Integer card : currentPlayerTokens) {
+                    table.removeToken(currentPlayer, table.cardToSlot[card]);
+                }
+
+                freezeTimes[currentPlayer] = System.currentTimeMillis() + env.config.penaltyFreezeMillis;
+            }
+        }
     }
 
     /**
      * Check if any cards can be removed from the deck and placed on the table.
      */
     private void placeCardsOnTable() {
+        Collections.shuffle(deck);
+
         int maxSlot = this.env.config.tableSize;
 
         for (int slot = 0; slot < maxSlot; slot++) {
@@ -143,13 +184,16 @@ public class Dealer implements Runnable {
      */
     private void updateTimerDisplay(boolean reset) {
         if (reset) {
-            // reshuffleTime = System.currentTimeMillis() +
-            // this.env.config.turnTimeoutMillis;
-            reshuffleTime = System.currentTimeMillis() + 20 * 1000;
+            reshuffleTime = System.currentTimeMillis() +
+                    this.env.config.turnTimeoutMillis;
         } else {
             long timeLeft = reshuffleTime - System.currentTimeMillis();
 
-            this.env.ui.setCountdown(timeLeft, timeLeft < this.env.config.turnTimeoutWarningMillis);
+            this.env.ui.setCountdown(timeLeft < 0 ? 0 : timeLeft, timeLeft < this.env.config.turnTimeoutWarningMillis);
+
+            for (int player = 0; player < players.length; player++) {
+                this.env.ui.setFreeze(player, freezeTimes[player] - System.currentTimeMillis());
+            }
         }
     }
 

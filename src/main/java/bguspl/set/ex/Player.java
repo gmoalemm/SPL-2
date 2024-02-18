@@ -131,9 +131,8 @@ public class Player implements Runnable {
      * @param slot - the slot corresponding to the key pressed.
      */
     public void keyPressed(int slot) {
-        if (!this.table.removeToken(this.id, slot) && table.getNumOfTokens(id) < 3) {
+        if (table.getNumOfTokens(id) < 3 && !this.table.removeToken(this.id, slot)) {
             this.table.placeToken(this.id, slot);
-            System.out.println("placed token");
         }
     }
 
@@ -145,7 +144,7 @@ public class Player implements Runnable {
      */
     public void point() {
         try {
-            Thread.sleep(this.env.config.penaltyFreezeMillis);
+            Thread.sleep(this.env.config.pointFreezeMillis);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
