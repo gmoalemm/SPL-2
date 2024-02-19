@@ -147,12 +147,23 @@ public class Table {
     public void placeToken(int player, int slot) {
         // TODO: treat special scenarios (for eample: cannot place a token, etc)
 
-        this.env.ui.placeToken(player, slot);
-        this.tokens[slot][player] = true;
+        if (slotToCard[slot] != null) {
+            this.env.ui.placeToken(player, slot);
+            this.tokens[slot][player] = true;
 
-        if (getNumOfTokens(player) == 3) {
-            this.waitingPlayers.add(player);
+            if (getNumOfTokens(player) == 3) {
+                this.waitingPlayers.add(player);
+            }
         }
+    }
+
+    public boolean isEmpty() {
+        for (Integer i : slotToCard) {
+            if (i != null)
+                return false;
+        }
+
+        return true;
     }
 
     /**

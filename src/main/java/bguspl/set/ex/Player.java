@@ -158,7 +158,7 @@ public class Player implements Runnable {
      */
     public void penalty() {
         try {
-            Thread.sleep(this.env.config.penaltyFreezeMillis);
+            playerThread.sleep(this.env.config.penaltyFreezeMillis);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

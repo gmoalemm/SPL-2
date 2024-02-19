@@ -45,7 +45,9 @@ public class Dealer implements Runnable {
         this.env = env;
         this.table = table;
         this.players = players;
-        deck = IntStream.range(0, env.config.deckSize).boxed().collect(Collectors.toList());
+        // deck = IntStream.range(0,
+        // env.config.deckSize).boxed().collect(Collectors.toList());
+        deck = IntStream.range(0, 15).boxed().collect(Collectors.toList());
 
         freezeTimes = new long[this.players.length];
     }
@@ -61,7 +63,6 @@ public class Dealer implements Runnable {
             placeCardsOnTable();
             updateTimerDisplay(true);
             timerLoop();
-            // updateTimerDisplay(false);
             removeAllCardsFromTable();
         }
 
@@ -74,7 +75,7 @@ public class Dealer implements Runnable {
      * not time out.
      */
     private void timerLoop() {
-        while (!terminate && System.currentTimeMillis() < reshuffleTime) {
+        while (!terminate && System.currentTimeMillis() < reshuffleTime && !this.table.isEmpty()) {
             sleepUntilWokenOrTimeout();
             updateTimerDisplay(false);
             removeCardsFromTable();
@@ -111,8 +112,6 @@ public class Dealer implements Runnable {
      * Checks cards should be removed from the table and removes them.
      */
     private void removeCardsFromTable() {
-        // TODO implement
-
         Integer currentPlayer;
         ArrayList<Integer> currentPlayerTokens = new ArrayList<Integer>(3);
         int i;
@@ -136,8 +135,10 @@ public class Dealer implements Runnable {
                     table.removeCard(table.cardToSlot[card]);
                 }
 
-                updateTimerDisplay(true);
-                freezeTimes[currentPlayer] = System.currentTimeMillis() + env.config.pointFreezeMillis;
+                if (!this.table.isEmpty()) {
+                    updateTimerDisplay(true);
+                    freezeTimes[currentPlayer] = System.currentTimeMillis() + env.config.pointFreezeMillis;
+                }
             } else {
                 this.players[currentPlayer].penalty();
 
@@ -159,7 +160,7 @@ public class Dealer implements Runnable {
         int maxSlot = this.env.config.tableSize;
 
         for (int slot = 0; slot < maxSlot; slot++) {
-            if (this.table.slotToCard[slot] == null) {
+            if (this.table.slotToCard[slot] == null && !this.deck.isEmpty()) {
                 this.table.placeCard(this.deck.remove(0), slot);
             }
         }
@@ -186,6 +187,8 @@ public class Dealer implements Runnable {
         if (reset) {
             reshuffleTime = System.currentTimeMillis() +
                     this.env.config.turnTimeoutMillis;
+
+            reshuffleTime = System.currentTimeMillis() + 20 * 1000;
         } else {
             long timeLeft = reshuffleTime - System.currentTimeMillis();
 
@@ -204,8 +207,10 @@ public class Dealer implements Runnable {
         int maxSlot = this.env.config.tableSize;
 
         for (int slot = 0; slot < maxSlot; slot++) {
-            this.deck.add(this.table.slotToCard[slot]);
-            this.table.removeCard(slot);
+            if (this.table.slotToCard[slot] != null) {
+                this.deck.add(this.table.slotToCard[slot]);
+                this.table.removeCard(slot);
+            }
         }
     }
 
@@ -213,6 +218,26 @@ public class Dealer implements Runnable {
      * Check who is/are the winner/s and displays them.
      */
     private void announceWinners() {
-        // TODO implement
+        int maxPoints = 0, counter = 0, i = 0;
+        int[] winners;
+
+        for (Player player : players) {
+            if (player.score() > maxPoints) {
+                counter = 1;
+                maxPoints = player.score();
+            } else if (player.score() == maxPoints) {
+                counter++;
+            }
+        }
+
+        winners = new int[counter];
+
+        for (Player player : players) {
+            if (player.score() == maxPoints) {
+                winners[i++] = player.id;
+            }
+        }
+
+        this.env.ui.announceWinner(winners);
     }
 }
