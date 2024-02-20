@@ -47,7 +47,7 @@ public class Dealer implements Runnable {
         this.players = players;
         // deck = IntStream.range(0,
         // env.config.deckSize).boxed().collect(Collectors.toList());
-        deck = IntStream.range(0, 15).boxed().collect(Collectors.toList());
+        deck = IntStream.range(0, 9).boxed().collect(Collectors.toList());
 
         freezeTimes = new long[this.players.length];
     }
@@ -58,6 +58,11 @@ public class Dealer implements Runnable {
     @Override
     public void run() {
         env.logger.info("thread " + Thread.currentThread().getName() + " starting.");
+
+        for (Player player : this.players) {
+            Thread playerThread = new Thread(player);
+            playerThread.start();
+        }
 
         while (!shouldFinish()) {
             placeCardsOnTable();
@@ -146,7 +151,9 @@ public class Dealer implements Runnable {
                     table.removeToken(currentPlayer, table.cardToSlot[card]);
                 }
 
-                freezeTimes[currentPlayer] = System.currentTimeMillis() + env.config.penaltyFreezeMillis;
+                // freezeTimes[currentPlayer] = System.currentTimeMillis() +
+                // env.config.penaltyFreezeMillis;
+                freezeTimes[currentPlayer] = System.currentTimeMillis() + 5000;
             }
         }
     }
@@ -188,14 +195,25 @@ public class Dealer implements Runnable {
             reshuffleTime = System.currentTimeMillis() +
                     this.env.config.turnTimeoutMillis;
 
-            reshuffleTime = System.currentTimeMillis() + 20 * 1000;
+            // reshuffleTime = System.currentTimeMillis() + 30 * 1000;
         } else {
             long timeLeft = reshuffleTime - System.currentTimeMillis();
 
             this.env.ui.setCountdown(timeLeft < 0 ? 0 : timeLeft, timeLeft < this.env.config.turnTimeoutWarningMillis);
 
             for (int player = 0; player < players.length; player++) {
-                this.env.ui.setFreeze(player, freezeTimes[player] - System.currentTimeMillis());
+
+                if (freezeTimes[player] != 0) {
+                    this.env.ui.setFreeze(player, freezeTimes[player] - System.currentTimeMillis());
+
+                    if (freezeTimes[player] <= System.currentTimeMillis()) {
+                        synchronized (this.players[player].freezeLock) {
+                            System.out.println("freeing the thread");
+                            freezeTimes[player] = 0;
+                            this.players[player].freezeLock.notify();
+                        }
+                    }
+                }
             }
         }
     }

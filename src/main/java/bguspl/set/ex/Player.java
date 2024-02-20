@@ -1,5 +1,10 @@
 package bguspl.set.ex;
 
+import java.util.Random;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Semaphore;
+
 import bguspl.set.Env;
 
 /**
@@ -53,6 +58,18 @@ public class Player implements Runnable {
 
     private final Dealer dealer;
 
+    /// synchronization
+
+    private Object keyPressLock;
+
+    protected Object freezeLock;
+
+    private BlockingQueue<Integer> keyPreesesQueue;
+
+    private Semaphore queueSemaphore;
+
+    private Random rnd;
+
     /**
      * The class constructor.
      *
@@ -68,7 +85,13 @@ public class Player implements Runnable {
         this.table = table;
         this.id = id;
         this.human = human;
-        this.dealer = dealer; // our addition
+
+        this.dealer = dealer;
+        this.keyPressLock = new Object();
+        this.freezeLock = new Object();
+        this.keyPreesesQueue = new ArrayBlockingQueue<Integer>(3);
+        this.queueSemaphore = new Semaphore(1, true);
+        this.rnd = new Random();
     }
 
     /**
@@ -84,10 +107,44 @@ public class Player implements Runnable {
             createArtificialIntelligence();
 
         while (!terminate) {
-            // TODO implement main player loop
+            try {
+                synchronized (this.keyPressLock) {
+                    // wait for input manager to wake this thread up when a key press occures
+                    this.keyPressLock.wait();
+                }
+
+                // gain control over the queue
+                this.queueSemaphore.acquire();
+
+                while (!keyPreesesQueue.isEmpty()) {
+                    Integer slot = keyPreesesQueue.poll();
+
+                    if (!this.table.removeToken(this.id, slot)) {
+                        this.table.placeToken(this.id, slot);
+                    }
+                }
+
+                if (this.table.getNumOfTokens(this.id) == 3) {
+                    synchronized (this.freezeLock) {
+                        this.freezeLock.wait();
+                    }
+                }
+
+                this.queueSemaphore.release();
+
+                if (!human) {
+                    synchronized (this) {
+                        notify();
+                    }
+                }
+            } catch (InterruptedException e) {
+
+            }
         }
         if (!human)
-            try {
+            try
+
+            {
                 aiThread.join();
             } catch (InterruptedException ignored) {
             }
@@ -105,8 +162,17 @@ public class Player implements Runnable {
         aiThread = new Thread(() -> {
             env.logger.info("thread " + Thread.currentThread().getName() + " starting.");
             while (!terminate) {
-                // TODO implement player key press simulator
                 try {
+                    int random = this.rnd.nextInt(this.env.config.tableSize);
+
+                    Thread.sleep(500);
+
+                    while (!this.table.cardExists(random)) {
+                        random = this.rnd.nextInt(this.env.config.tableSize);
+                    }
+
+                    this.keyPressed(random);
+
                     synchronized (this) {
                         wait();
                     }
@@ -115,6 +181,7 @@ public class Player implements Runnable {
             }
             env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
         }, "computer-" + id);
+
         aiThread.start();
     }
 
@@ -122,7 +189,8 @@ public class Player implements Runnable {
      * Called when the game should be terminated.
      */
     public void terminate() {
-        // TODO implement
+        this.terminate = true;
+        this.playerThread.interrupt();
     }
 
     /**
@@ -131,8 +199,14 @@ public class Player implements Runnable {
      * @param slot - the slot corresponding to the key pressed.
      */
     public void keyPressed(int slot) {
-        if (table.getNumOfTokens(id) < 3 && !this.table.removeToken(this.id, slot)) {
-            this.table.placeToken(this.id, slot);
+        if (this.queueSemaphore.tryAcquire()) {
+            this.keyPreesesQueue.add(slot);
+            System.out.println("added slot " + slot);
+            this.queueSemaphore.release();
+        }
+
+        synchronized (this.keyPressLock) {
+            this.keyPressLock.notify();
         }
     }
 
@@ -143,12 +217,6 @@ public class Player implements Runnable {
      * @post - the player's score is updated in the ui.
      */
     public void point() {
-        try {
-            Thread.sleep(this.env.config.pointFreezeMillis);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
         int ignored = table.countCards(); // this part is just for demonstration in the unit tests
         env.ui.setScore(id, ++score);
     }
@@ -157,11 +225,7 @@ public class Player implements Runnable {
      * Penalize a player and perform other related actions.
      */
     public void penalty() {
-        try {
-            playerThread.sleep(this.env.config.penaltyFreezeMillis);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+
     }
 
     public int score() {

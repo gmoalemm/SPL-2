@@ -195,4 +195,20 @@ public class Table {
 
         return count;
     }
+
+    public int existingCards() {
+        int sum = 0;
+
+        for (Integer s : slotToCard) {
+            if (s != null) {
+                sum++;
+            }
+        }
+
+        return sum;
+    }
+
+    public boolean cardExists(int slot) {
+        return this.slotToCard[slot] != null;
+    }
 }
