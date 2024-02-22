@@ -62,13 +62,15 @@ public class Player implements Runnable {
 
     private Object keyPressLock;
 
-    protected Object freezeLock;
+    protected Object playerTestLock;
 
     private BlockingQueue<Integer> keyPreesesQueue;
 
     private Semaphore queueSemaphore;
 
     private Random rnd;
+
+    protected int foundSet; // -1 FAILED, 0 NEUTRAL, 1 SUCCEED
 
     /**
      * The class constructor.
@@ -88,10 +90,11 @@ public class Player implements Runnable {
 
         this.dealer = dealer;
         this.keyPressLock = new Object();
-        this.freezeLock = new Object();
+        this.playerTestLock = new Object();
         this.keyPreesesQueue = new ArrayBlockingQueue<Integer>(3);
         this.queueSemaphore = new Semaphore(1, true);
         this.rnd = new Random();
+        this.foundSet = 0;
     }
 
     /**
@@ -125,8 +128,18 @@ public class Player implements Runnable {
                 }
 
                 if (this.table.getNumOfTokens(this.id) == 3) {
-                    synchronized (this.freezeLock) {
-                        this.freezeLock.wait();
+                    synchronized (this.dealer.testLock) {
+                        this.dealer.testLock.notify();
+                    }
+
+                    synchronized (this.playerTestLock) {
+                        this.playerTestLock.wait();
+
+                        if (this.foundSet == 1) {
+                            this.point();
+                        } else if (this.foundSet == -1) {
+                            this.penalty();
+                        }
                     }
                 }
 
@@ -219,13 +232,22 @@ public class Player implements Runnable {
     public void point() {
         int ignored = table.countCards(); // this part is just for demonstration in the unit tests
         env.ui.setScore(id, ++score);
+        this.env.ui.setFreeze(id, env.config.pointFreezeMillis);
+        try {
+            Thread.sleep(env.config.pointFreezeMillis);
+        } catch (InterruptedException e) {
+        }
     }
 
     /**
      * Penalize a player and perform other related actions.
      */
     public void penalty() {
-
+        this.env.ui.setFreeze(id, env.config.penaltyFreezeMillis);
+        try {
+            Thread.sleep(env.config.penaltyFreezeMillis);
+        } catch (InterruptedException e) {
+        }
     }
 
     public int score() {

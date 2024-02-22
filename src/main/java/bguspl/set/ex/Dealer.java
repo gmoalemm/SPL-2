@@ -5,6 +5,7 @@ import bguspl.set.Env;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Semaphore;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -39,6 +40,8 @@ public class Dealer implements Runnable {
      */
     private long reshuffleTime = Long.MAX_VALUE;
 
+    public Object testLock;
+
     private long[] freezeTimes;
 
     public Dealer(Env env, Table table, Player[] players) {
@@ -47,9 +50,11 @@ public class Dealer implements Runnable {
         this.players = players;
         // deck = IntStream.range(0,
         // env.config.deckSize).boxed().collect(Collectors.toList());
-        deck = IntStream.range(0, 9).boxed().collect(Collectors.toList());
+        this.deck = IntStream.range(0, 21).boxed().collect(Collectors.toList());
 
-        freezeTimes = new long[this.players.length];
+        this.testLock = new Object();
+
+        this.freezeTimes = new long[this.players.length];
     }
 
     /**
@@ -118,7 +123,7 @@ public class Dealer implements Runnable {
      */
     private void removeCardsFromTable() {
         Integer currentPlayer;
-        ArrayList<Integer> currentPlayerTokens = new ArrayList<Integer>(3);
+        int[] currentPlayerCards = new int[3];
         int i;
 
         while (!this.table.waitingPlayers.isEmpty()) {
@@ -127,33 +132,39 @@ public class Dealer implements Runnable {
             i = 0;
 
             // find the cards that the current player chose
-            for (int s = 0; s < table.tokens.length; s++) {
-                if (table.tokens[s][currentPlayer]) {
-                    currentPlayerTokens.add(i++, table.slotToCard[s]);
+            for (int slot = 0; slot < this.env.config.tableSize; slot++) {
+                // if the current player placed a token in this slot, add the card to the array
+                if (this.table.tokens[slot][currentPlayer]) {
+                    currentPlayerCards[i++] = this.table.slotToCard[slot];
                 }
             }
 
-            if (!env.util.findSets(currentPlayerTokens, 1).isEmpty()) {
-                this.players[currentPlayer].point();
+            // now check the set
 
-                for (Integer card : currentPlayerTokens) {
-                    table.removeCard(table.cardToSlot[card]);
+            if (i == 3) {
+                if (env.util.testSet(currentPlayerCards)) {
+                    this.players[currentPlayer].foundSet = 1;
+
+                    for (int card : currentPlayerCards) {
+                        table.removeCard(this.table.cardToSlot[card]);
+                    }
+
+                    System.out.println("player " + currentPlayer + " won");
+                    this.freezeTimes[currentPlayer] = System.currentTimeMillis() + this.env.config.pointFreezeMillis;
+                    this.updateTimerDisplay(true);
+                } else {
+                    this.players[currentPlayer].foundSet = -1;
+
+                    for (int card : currentPlayerCards) {
+                        table.removeToken(currentPlayer, this.table.cardToSlot[card]);
+                    }
+
+                    this.freezeTimes[currentPlayer] = System.currentTimeMillis() + this.env.config.penaltyFreezeMillis;
                 }
+            }
 
-                if (!this.table.isEmpty()) {
-                    updateTimerDisplay(true);
-                    freezeTimes[currentPlayer] = System.currentTimeMillis() + env.config.pointFreezeMillis;
-                }
-            } else {
-                this.players[currentPlayer].penalty();
-
-                for (Integer card : currentPlayerTokens) {
-                    table.removeToken(currentPlayer, table.cardToSlot[card]);
-                }
-
-                // freezeTimes[currentPlayer] = System.currentTimeMillis() +
-                // env.config.penaltyFreezeMillis;
-                freezeTimes[currentPlayer] = System.currentTimeMillis() + 5000;
+            synchronized (this.players[currentPlayer].playerTestLock) {
+                this.players[currentPlayer].playerTestLock.notify();
             }
         }
     }
@@ -178,10 +189,10 @@ public class Dealer implements Runnable {
      * purpose.
      */
     private void sleepUntilWokenOrTimeout() {
-        // TODO implement
-
         try {
-            Thread.sleep(25);
+            synchronized (this.testLock) {
+                this.testLock.wait(25);
+            }
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -192,8 +203,9 @@ public class Dealer implements Runnable {
      */
     private void updateTimerDisplay(boolean reset) {
         if (reset) {
-            reshuffleTime = System.currentTimeMillis() +
-                    this.env.config.turnTimeoutMillis;
+            reshuffleTime = System.currentTimeMillis() + this.env.config.turnTimeoutMillis;
+
+            this.env.ui.setCountdown(this.env.config.turnTimeoutMillis, false);
 
             // reshuffleTime = System.currentTimeMillis() + 30 * 1000;
         } else {
@@ -207,11 +219,7 @@ public class Dealer implements Runnable {
                     this.env.ui.setFreeze(player, freezeTimes[player] - System.currentTimeMillis());
 
                     if (freezeTimes[player] <= System.currentTimeMillis()) {
-                        synchronized (this.players[player].freezeLock) {
-                            System.out.println("freeing the thread");
-                            freezeTimes[player] = 0;
-                            this.players[player].freezeLock.notify();
-                        }
+                        freezeTimes[player] = 0;
                     }
                 }
             }
