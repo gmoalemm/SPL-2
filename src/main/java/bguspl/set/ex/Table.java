@@ -35,6 +35,8 @@ public class Table {
 
     protected Queue<Integer> waitingPlayers;
 
+    protected int[] tokensPerPlayer;
+
     /**
      * Constructor for testing.
      *
@@ -51,6 +53,7 @@ public class Table {
         this.cardToSlot = cardToSlot;
         this.tokens = new boolean[this.env.config.tableSize][this.env.config.players];
         this.waitingPlayers = new ArrayBlockingQueue<Integer>(this.env.config.players);
+        this.tokensPerPlayer = new int[this.env.config.players];
 
     }
 
@@ -145,16 +148,9 @@ public class Table {
      * @param slot   - the slot on which to place the token.
      */
     public void placeToken(int player, int slot) {
-        // TODO: treat special scenarios (for eample: cannot place a token, etc)
-
-        if (slotToCard[slot] != null) {
-            this.env.ui.placeToken(player, slot);
-            this.tokens[slot][player] = true;
-
-            if (getNumOfTokens(player) == 3) {
-                this.waitingPlayers.add(player);
-            }
-        }
+        this.env.ui.placeToken(player, slot);
+        this.tokens[slot][player] = true;
+        this.tokensPerPlayer[player]++;
     }
 
     public boolean isEmpty() {
@@ -177,23 +173,12 @@ public class Table {
         if (this.tokens[slot][player]) {
             this.env.ui.removeToken(player, slot);
             this.tokens[slot][player] = false;
+            this.tokensPerPlayer[player]--;
 
             return true;
         }
 
         return false;
-    }
-
-    public int getNumOfTokens(int player) {
-        int count = 0;
-
-        for (int slot = 0; slot < this.env.config.tableSize; slot++) {
-            if (tokens[slot][player]) {
-                count++;
-            }
-        }
-
-        return count;
     }
 
     public int existingCards() {

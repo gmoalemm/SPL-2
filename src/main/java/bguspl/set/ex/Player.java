@@ -3,6 +3,7 @@ package bguspl.set.ex;
 import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 
 import bguspl.set.Env;
@@ -72,6 +73,8 @@ public class Player implements Runnable {
 
     protected int foundSet; // -1 FAILED, 0 NEUTRAL, 1 SUCCEED
 
+    protected boolean waitingToBeTested;
+
     /**
      * The class constructor.
      *
@@ -91,10 +94,16 @@ public class Player implements Runnable {
         this.dealer = dealer;
         this.keyPressLock = new Object();
         this.playerTestLock = new Object();
-        this.keyPreesesQueue = new ArrayBlockingQueue<Integer>(3);
+
+        if (human)
+            this.keyPreesesQueue = new LinkedBlockingQueue<Integer>();
+        else
+            this.keyPreesesQueue = new ArrayBlockingQueue<Integer>(3);
+
         this.queueSemaphore = new Semaphore(1, true);
         this.rnd = new Random();
         this.foundSet = 0;
+        this.waitingToBeTested = false;
     }
 
     /**
@@ -122,18 +131,25 @@ public class Player implements Runnable {
                 while (!keyPreesesQueue.isEmpty()) {
                     Integer slot = keyPreesesQueue.poll();
 
-                    if (!this.table.removeToken(this.id, slot)) {
+                    if (!this.table.removeToken(this.id, slot) && this.table.tokensPerPlayer[this.id] < 3
+                            && this.table.slotToCard[slot] != null) {
                         this.table.placeToken(this.id, slot);
+
+                        if (this.table.tokensPerPlayer[this.id] == 3) {
+                            this.waitingToBeTested = true;
+                            this.table.waitingPlayers.add(this.id);
+                        }
                     }
                 }
 
-                if (this.table.getNumOfTokens(this.id) == 3) {
+                if (this.waitingToBeTested) {
                     synchronized (this.dealer.testLock) {
                         this.dealer.testLock.notify();
                     }
 
                     synchronized (this.playerTestLock) {
                         this.playerTestLock.wait();
+                        this.waitingToBeTested = false;
 
                         if (this.foundSet == 1) {
                             this.point();
@@ -155,9 +171,7 @@ public class Player implements Runnable {
             }
         }
         if (!human)
-            try
-
-            {
+            try {
                 aiThread.join();
             } catch (InterruptedException ignored) {
             }
@@ -178,7 +192,7 @@ public class Player implements Runnable {
                 try {
                     int random = this.rnd.nextInt(this.env.config.tableSize);
 
-                    Thread.sleep(500);
+                    Thread.sleep(100);
 
                     while (!this.table.cardExists(random)) {
                         random = this.rnd.nextInt(this.env.config.tableSize);
@@ -212,7 +226,7 @@ public class Player implements Runnable {
      * @param slot - the slot corresponding to the key pressed.
      */
     public void keyPressed(int slot) {
-        if (this.queueSemaphore.tryAcquire()) {
+        if (!this.dealer.placingCards && this.queueSemaphore.tryAcquire()) {
             this.keyPreesesQueue.add(slot);
             System.out.println("added slot " + slot);
             this.queueSemaphore.release();
@@ -230,9 +244,12 @@ public class Player implements Runnable {
      * @post - the player's score is updated in the ui.
      */
     public void point() {
+        System.out.println("player " + this.id + " won");
         int ignored = table.countCards(); // this part is just for demonstration in the unit tests
         env.ui.setScore(id, ++score);
         this.env.ui.setFreeze(id, env.config.pointFreezeMillis);
+        this.foundSet = 0;
+
         try {
             Thread.sleep(env.config.pointFreezeMillis);
         } catch (InterruptedException e) {
@@ -243,7 +260,9 @@ public class Player implements Runnable {
      * Penalize a player and perform other related actions.
      */
     public void penalty() {
+        System.out.println("player " + this.id + " penalized");
         this.env.ui.setFreeze(id, env.config.penaltyFreezeMillis);
+        this.foundSet = 0;
         try {
             Thread.sleep(env.config.penaltyFreezeMillis);
         } catch (InterruptedException e) {

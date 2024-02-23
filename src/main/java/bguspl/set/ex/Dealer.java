@@ -44,6 +44,8 @@ public class Dealer implements Runnable {
 
     private long[] freezeTimes;
 
+    public boolean placingCards;
+
     public Dealer(Env env, Table table, Player[] players) {
         this.env = env;
         this.table = table;
@@ -55,6 +57,8 @@ public class Dealer implements Runnable {
         this.testLock = new Object();
 
         this.freezeTimes = new long[this.players.length];
+
+        this.placingCards = true;
     }
 
     /**
@@ -149,16 +153,12 @@ public class Dealer implements Runnable {
                         table.removeCard(this.table.cardToSlot[card]);
                     }
 
-                    System.out.println("player " + currentPlayer + " won");
+                    System.out.println("player " + currentPlayer + " won (dealer)");
                     this.freezeTimes[currentPlayer] = System.currentTimeMillis() + this.env.config.pointFreezeMillis;
                     this.updateTimerDisplay(true);
                 } else {
+                    System.out.println("player " + currentPlayer + " penalized (dealer)");
                     this.players[currentPlayer].foundSet = -1;
-
-                    for (int card : currentPlayerCards) {
-                        table.removeToken(currentPlayer, this.table.cardToSlot[card]);
-                    }
-
                     this.freezeTimes[currentPlayer] = System.currentTimeMillis() + this.env.config.penaltyFreezeMillis;
                 }
             }
@@ -182,6 +182,8 @@ public class Dealer implements Runnable {
                 this.table.placeCard(this.deck.remove(0), slot);
             }
         }
+
+        this.placingCards = false;
     }
 
     /**
@@ -230,6 +232,8 @@ public class Dealer implements Runnable {
      * Returns all the cards from the table to the deck.
      */
     private void removeAllCardsFromTable() {
+        this.placingCards = true;
+
         int maxSlot = this.env.config.tableSize;
 
         for (int slot = 0; slot < maxSlot; slot++) {
