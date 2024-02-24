@@ -5,8 +5,6 @@ import bguspl.set.Env;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.Queue;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.stream.Collectors;
 
 /**
@@ -31,10 +29,10 @@ public class Table {
      */
     protected final Integer[] cardToSlot; // slot per card (if any)
 
-    protected final boolean[][] tokens; // an array for each slot and in it an array for each player
+    /** An array for each slot and in it an array for each player. */
+    protected final boolean[][] tokens;
 
-    protected Queue<Integer> waitingPlayers;
-
+    /** An array that holds the number of tokens each player has placed. */
     protected int[] tokensPerPlayer;
 
     /**
@@ -47,12 +45,10 @@ public class Table {
      *                   none).
      */
     public Table(Env env, Integer[] slotToCard, Integer[] cardToSlot) {
-
         this.env = env;
         this.slotToCard = slotToCard;
         this.cardToSlot = cardToSlot;
         this.tokens = new boolean[this.env.config.tableSize][this.env.config.players];
-        this.waitingPlayers = new ArrayBlockingQueue<Integer>(this.env.config.players);
         this.tokensPerPlayer = new int[this.env.config.players];
 
     }
@@ -63,7 +59,6 @@ public class Table {
      * @param env - the game environment objects.
      */
     public Table(Env env) {
-
         this(env, new Integer[env.config.tableSize], new Integer[env.config.deckSize]);
     }
 
@@ -113,7 +108,6 @@ public class Table {
         cardToSlot[card] = slot;
         slotToCard[slot] = card;
 
-        // TODO: probably add synchronization on the arrays
         this.env.ui.placeCard(card, slot);
     }
 
@@ -128,7 +122,6 @@ public class Table {
         } catch (InterruptedException ignored) {
         }
 
-        // TODO: probably add synchronization on the arrays
         cardToSlot[slotToCard[slot]] = null;
         slotToCard[slot] = null;
 
@@ -148,18 +141,14 @@ public class Table {
      * @param slot   - the slot on which to place the token.
      */
     public void placeToken(int player, int slot) {
-        this.env.ui.placeToken(player, slot);
-        this.tokens[slot][player] = true;
-        this.tokensPerPlayer[player]++;
-    }
-
-    public boolean isEmpty() {
-        for (Integer i : slotToCard) {
-            if (i != null)
-                return false;
+        if (!this.removeToken(player, slot) // the player did not have a token on this slot
+                && this.tokensPerPlayer[player] < 3 // the player did not reach the max. num. of tokens
+                && this.slotToCard[slot] != null) // the slot contains a card
+        {
+            this.env.ui.placeToken(player, slot);
+            this.tokens[slot][player] = true;
+            this.tokensPerPlayer[player]++;
         }
-
-        return true;
     }
 
     /**
@@ -179,21 +168,5 @@ public class Table {
         }
 
         return false;
-    }
-
-    public int existingCards() {
-        int sum = 0;
-
-        for (Integer s : slotToCard) {
-            if (s != null) {
-                sum++;
-            }
-        }
-
-        return sum;
-    }
-
-    public boolean cardExists(int slot) {
-        return this.slotToCard[slot] != null;
     }
 }

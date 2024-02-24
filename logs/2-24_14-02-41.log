@@ -1,0 +1,55 @@
+[14:02:41.744] [INFO   ] thread bguspl.set.Main.main() starting.
+[14:02:41.762] [SEVERE ] cannot read configuration file config.properties trying from resources.
+[14:02:41.774] [SEVERE ] configuration file was loaded from resources directory.
+[14:02:43.163] [INFO   ] thread dealer starting.
+[14:02:43.164] [INFO   ] thread dealer starting.
+[14:02:43.166] [INFO   ] thread Thread-1 starting.
+[14:02:43.166] [INFO   ] thread Thread-2 starting.
+[14:02:43.272] [SEVERE ] placing card 8 in slot 0
+[14:02:43.374] [SEVERE ] placing card 4 in slot 1
+[14:02:43.475] [SEVERE ] placing card 19 in slot 2
+[14:02:43.579] [SEVERE ] placing card 0 in slot 3
+[14:02:43.681] [SEVERE ] placing card 5 in slot 4
+[14:02:43.783] [SEVERE ] placing card 12 in slot 5
+[14:02:43.885] [SEVERE ] placing card 6 in slot 6
+[14:02:43.987] [SEVERE ] placing card 18 in slot 7
+[14:02:44.090] [SEVERE ] placing card 13 in slot 8
+[14:02:44.191] [SEVERE ] placing card 17 in slot 9
+[14:02:44.293] [SEVERE ] placing card 16 in slot 10
+[14:02:44.394] [SEVERE ] placing card 2 in slot 11
+[14:02:44.395] [SEVERE ] updating countdown to 60000
+[14:02:50.888] [SEVERE ] key 90 was pressed by player 1
+[14:02:50.889] [SEVERE ] player 1 placing token on slot 8
+[14:02:51.041] [SEVERE ] key 88 was pressed by player 1
+[14:02:51.043] [SEVERE ] player 1 placing token on slot 9
+[14:02:54.397] [SEVERE ] updating countdown to 49998
+[14:02:58.339] [SEVERE ] key 67 was pressed by player 1
+[14:02:58.340] [SEVERE ] player 1 placing token on slot 10
+[14:02:58.343] [SEVERE ] updating countdown to 46052
+[14:02:58.344] [SEVERE ] setting player 1 freeze to 200
+[14:03:08.345] [SEVERE ] updating countdown to 36051
+[14:03:08.346] [SEVERE ] setting player 1 freeze to -9802
+[14:03:13.906] [SEVERE ] exit button pressed
+[14:03:13.907] [INFO   ] thread Thread-1 terminated.
+[14:03:13.907] [INFO   ] thread Thread-2 terminated.
+[14:03:18.347] [SEVERE ] updating countdown to 26048
+[14:03:18.448] [SEVERE ] removing card from slot 0
+[14:03:18.550] [SEVERE ] removing card from slot 1
+[14:03:18.652] [SEVERE ] removing card from slot 2
+[14:03:18.756] [SEVERE ] removing card from slot 3
+[14:03:18.857] [SEVERE ] removing card from slot 4
+[14:03:18.960] [SEVERE ] removing card from slot 5
+[14:03:19.062] [SEVERE ] removing card from slot 6
+[14:03:19.164] [SEVERE ] removing card from slot 7
+[14:03:19.265] [SEVERE ] removing player 1 token from slot 8
+[14:03:19.268] [SEVERE ] removing card from slot 8
+[14:03:19.369] [SEVERE ] removing player 1 token from slot 9
+[14:03:19.371] [SEVERE ] removing card from slot 9
+[14:03:19.473] [SEVERE ] removing player 1 token from slot 10
+[14:03:19.474] [SEVERE ] removing card from slot 10
+[14:03:19.576] [SEVERE ] removing card from slot 11
+[14:03:19.578] [SEVERE ] announcing winner(s): player 1, player 2
+[14:03:19.583] [INFO   ] thread dealer terminated.
+[14:03:19.585] [INFO   ] thread dealer terminated.
+[14:03:19.586] [SEVERE ] thanks for playing... it was fun!
+[14:03:19.587] [INFO   ] thread bguspl.set.Main.main() terminated.

@@ -59,20 +59,36 @@ public class Player implements Runnable {
 
     private final Dealer dealer;
 
-    /// synchronization
-
+    /** A lock that let the player thread sleep until a keypress occurres. */
     private Object keyPressLock;
 
+    /**
+     * A lock that let the player thread sleep until the dealer returns an answer.
+     */
     protected Object playerTestLock;
 
+    /** A queue of slots that the player chose to put tokens in. */
     private BlockingQueue<Integer> keyPreesesQueue;
 
+    /**
+     * Locks the queue such that when the player handles previous presses, new
+     * presses cannot be added.
+     */
     private Semaphore queueSemaphore;
 
     private Random rnd;
 
-    protected int foundSet; // -1 FAILED, 0 NEUTRAL, 1 SUCCEED
+    /**
+     * The answer from the dealer. -1 means the set was not legal, 1 means a legal
+     * set, 0 means that the player was too slow.
+     */
+    protected int foundSet;
 
+    public static final int NOT_LEGAL = -1;
+    public static final int LEGAL_SET = 0;
+    public static final int TOO_SLOW = 1;
+
+    /** Is this player waiting to be tested? */
     protected boolean waitingToBeTested;
 
     /**
@@ -90,7 +106,6 @@ public class Player implements Runnable {
         this.table = table;
         this.id = id;
         this.human = human;
-
         this.dealer = dealer;
         this.keyPressLock = new Object();
         this.playerTestLock = new Object();
@@ -114,6 +129,7 @@ public class Player implements Runnable {
     public void run() {
         playerThread = Thread.currentThread();
         env.logger.info("thread " + Thread.currentThread().getName() + " starting.");
+        Integer slot, oldTokens;
 
         if (!human)
             createArtificialIntelligence();
@@ -125,47 +141,42 @@ public class Player implements Runnable {
                     this.keyPressLock.wait();
                 }
 
-                // gain control over the queue
+                // gain control over the queue and handle the keypresses
                 this.queueSemaphore.acquire();
 
-                while (!keyPreesesQueue.isEmpty()) {
-                    Integer slot = keyPreesesQueue.poll();
+                while (!this.keyPreesesQueue.isEmpty() && !this.waitingToBeTested) {
+                    slot = this.keyPreesesQueue.poll();
+                    oldTokens = this.table.tokensPerPlayer[id];
 
-                    if (!this.table.removeToken(this.id, slot) && this.table.tokensPerPlayer[this.id] < 3
-                            && this.table.slotToCard[slot] != null) {
-                        this.table.placeToken(this.id, slot);
+                    this.table.placeToken(this.id, slot);
 
-                        if (this.table.tokensPerPlayer[this.id] == 3) {
-                            this.waitingToBeTested = true;
-                            this.table.waitingPlayers.add(this.id);
-                        }
+                    // if the number of tokens changed from 2 to 3,
+                    // this is the third token placement and we need to check if the cards form a
+                    // legal set
+                    if (oldTokens == 2 && this.table.tokensPerPlayer[this.id] == 3) {
+                        this.waitingToBeTested = true;
+                        this.dealer.addPlayerToQueue(id);
                     }
                 }
 
                 if (this.waitingToBeTested) {
-                    synchronized (this.dealer.testLock) {
-                        this.dealer.testLock.notify();
-                    }
-
                     synchronized (this.playerTestLock) {
                         this.playerTestLock.wait();
                         this.waitingToBeTested = false;
 
-                        if (this.foundSet == 1) {
+                        if (this.foundSet == Player.LEGAL_SET) {
                             this.point();
-                        } else if (this.foundSet == -1) {
+                        } else if (this.foundSet == Player.NOT_LEGAL) {
                             this.penalty();
                         }
+
+                        this.foundSet = TOO_SLOW;
+
+                        this.keyPreesesQueue.clear();
                     }
                 }
 
                 this.queueSemaphore.release();
-
-                if (!human) {
-                    synchronized (this) {
-                        notify();
-                    }
-                }
             } catch (InterruptedException e) {
 
             }
@@ -188,21 +199,18 @@ public class Player implements Runnable {
         // note: this is a very, very smart AI (!)
         aiThread = new Thread(() -> {
             env.logger.info("thread " + Thread.currentThread().getName() + " starting.");
+
             while (!terminate) {
                 try {
                     int random = this.rnd.nextInt(this.env.config.tableSize);
 
-                    Thread.sleep(100);
-
-                    while (!this.table.cardExists(random)) {
+                    while (this.table.slotToCard[random] == null) {
                         random = this.rnd.nextInt(this.env.config.tableSize);
                     }
 
                     this.keyPressed(random);
 
-                    synchronized (this) {
-                        wait();
-                    }
+                    Thread.sleep(500);
                 } catch (InterruptedException ignored) {
                 }
             }
@@ -210,6 +218,7 @@ public class Player implements Runnable {
         }, "computer-" + id);
 
         aiThread.start();
+
     }
 
     /**
@@ -226,9 +235,8 @@ public class Player implements Runnable {
      * @param slot - the slot corresponding to the key pressed.
      */
     public void keyPressed(int slot) {
-        if (!this.dealer.placingCards && this.queueSemaphore.tryAcquire()) {
+        if (!this.dealer.currentlyPlacingCards && this.queueSemaphore.tryAcquire()) {
             this.keyPreesesQueue.add(slot);
-            System.out.println("added slot " + slot);
             this.queueSemaphore.release();
         }
 
@@ -244,14 +252,13 @@ public class Player implements Runnable {
      * @post - the player's score is updated in the ui.
      */
     public void point() {
-        System.out.println("player " + this.id + " won");
         int ignored = table.countCards(); // this part is just for demonstration in the unit tests
-        env.ui.setScore(id, ++score);
+        this.env.ui.setScore(id, ++score);
         this.env.ui.setFreeze(id, env.config.pointFreezeMillis);
         this.foundSet = 0;
 
         try {
-            Thread.sleep(env.config.pointFreezeMillis);
+            Thread.sleep(this.env.config.pointFreezeMillis);
         } catch (InterruptedException e) {
         }
     }
@@ -260,11 +267,11 @@ public class Player implements Runnable {
      * Penalize a player and perform other related actions.
      */
     public void penalty() {
-        System.out.println("player " + this.id + " penalized");
-        this.env.ui.setFreeze(id, env.config.penaltyFreezeMillis);
+        this.env.ui.setFreeze(this.id, this.env.config.penaltyFreezeMillis);
         this.foundSet = 0;
+
         try {
-            Thread.sleep(env.config.penaltyFreezeMillis);
+            Thread.sleep(this.env.config.penaltyFreezeMillis);
         } catch (InterruptedException e) {
         }
     }
