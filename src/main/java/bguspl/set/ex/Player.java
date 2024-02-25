@@ -138,45 +138,45 @@ public class Player implements Runnable {
 
         while (!terminate) {
             try {
-                synchronized (this.keyPressLock) {
+                synchronized (keyPressLock) {
                     // wait for input manager to wake this thread up when a key press occures
-                    this.keyPressLock.wait();
+                    keyPressLock.wait();
                 }
 
                 // gain control over the queue and handle the keypresses
-                this.queueSemaphore.acquire();
+                queueSemaphore.acquire();
 
-                while (!this.keyPreesesQueue.isEmpty() && !this.waitingToBeTested) {
-                    slot = this.keyPreesesQueue.poll();
-                    oldTokens = this.table.tokensPerPlayer[id];
+                while (!keyPreesesQueue.isEmpty() && !waitingToBeTested) {
+                    slot = keyPreesesQueue.poll();
+                    oldTokens = table.tokensPerPlayer[id];
 
-                    this.table.placeToken(this.id, slot);
+                    table.placeToken(id, slot);
 
                     // if the number of tokens changed from 2 to 3,
                     // this is the third token placement and we need to check if the cards form a
                     // legal set
-                    if (oldTokens == Table.SET_SIZE - 1 && this.table.tokensPerPlayer[this.id] == Table.SET_SIZE) {
-                        this.waitingToBeTested = true;
-                        this.dealer.addPlayerToQueue(id);
+                    if (oldTokens == Table.SET_SIZE - 1 && table.tokensPerPlayer[id] == Table.SET_SIZE) {
+                        waitingToBeTested = true;
+                        dealer.addPlayerToQueue(id);
                     }
                 }
 
-                if (this.waitingToBeTested) {
-                    synchronized (this.playerTestLock) {
-                        this.playerTestLock.wait();
-                        this.waitingToBeTested = false;
+                if (waitingToBeTested) {
+                    synchronized (playerTestLock) {
+                        playerTestLock.wait();
+                        waitingToBeTested = false;
 
-                        if (this.foundSet == LEGAL_SET) {
-                            this.point();
-                        } else if (this.foundSet == NOT_LEGAL) {
-                            this.penalty();
+                        if (foundSet == LEGAL_SET) {
+                            point();
+                        } else if (foundSet == NOT_LEGAL) {
+                            penalty();
                         }
 
-                        this.keyPreesesQueue.clear();
+                        keyPreesesQueue.clear();
                     }
                 }
 
-                this.queueSemaphore.release();
+                queueSemaphore.release();
             } catch (InterruptedException e) {
 
             }
@@ -202,13 +202,13 @@ public class Player implements Runnable {
 
             while (!terminate) {
                 try {
-                    int random = this.rnd.nextInt(this.env.config.tableSize);
+                    int random = rnd.nextInt(env.config.tableSize);
 
-                    while (this.table.slotToCard[random] == null) {
-                        random = this.rnd.nextInt(this.env.config.tableSize);
+                    while (table.slotToCard[random] == null) {
+                        random = rnd.nextInt(env.config.tableSize);
                     }
 
-                    this.keyPressed(random);
+                    keyPressed(random);
 
                     Thread.sleep(BOT_BREAK_MILLIS);
                 } catch (InterruptedException ignored) {
@@ -225,8 +225,8 @@ public class Player implements Runnable {
      * Called when the game should be terminated.
      */
     public void terminate() {
-        this.terminate = true;
-        this.playerThread.interrupt();
+        terminate = true;
+        playerThread.interrupt();
     }
 
     /**
@@ -235,13 +235,13 @@ public class Player implements Runnable {
      * @param slot - the slot corresponding to the key pressed.
      */
     public void keyPressed(int slot) {
-        if (!this.dealer.currentlyPlacingCards && this.queueSemaphore.tryAcquire()) {
-            this.keyPreesesQueue.add(slot);
-            this.queueSemaphore.release();
+        if (!dealer.currentlyPlacingCards && queueSemaphore.tryAcquire()) {
+            keyPreesesQueue.add(slot);
+            queueSemaphore.release();
         }
 
-        synchronized (this.keyPressLock) {
-            this.keyPressLock.notify();
+        synchronized (keyPressLock) {
+            keyPressLock.notify();
         }
     }
 
@@ -253,12 +253,12 @@ public class Player implements Runnable {
      */
     public void point() {
         int ignored = table.countCards(); // this part is just for demonstration in the unit tests
-        this.env.ui.setScore(id, ++score);
-        this.env.ui.setFreeze(id, env.config.pointFreezeMillis);
-        this.foundSet = Player.NEUTRAL;
+        env.ui.setScore(id, ++score);
+        env.ui.setFreeze(id, env.config.pointFreezeMillis);
+        foundSet = Player.NEUTRAL;
 
         try {
-            Thread.sleep(this.env.config.pointFreezeMillis);
+            Thread.sleep(env.config.pointFreezeMillis);
         } catch (InterruptedException e) {
         }
     }
@@ -267,11 +267,11 @@ public class Player implements Runnable {
      * Penalize a player and perform other related actions.
      */
     public void penalty() {
-        this.env.ui.setFreeze(this.id, this.env.config.penaltyFreezeMillis);
-        this.foundSet = NEUTRAL;
+        env.ui.setFreeze(id, env.config.penaltyFreezeMillis);
+        foundSet = NEUTRAL;
 
         try {
-            Thread.sleep(this.env.config.penaltyFreezeMillis);
+            Thread.sleep(env.config.penaltyFreezeMillis);
         } catch (InterruptedException e) {
         }
     }

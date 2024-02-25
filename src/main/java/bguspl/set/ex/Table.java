@@ -50,8 +50,8 @@ public class Table {
         this.env = env;
         this.slotToCard = slotToCard;
         this.cardToSlot = cardToSlot;
-        this.tokens = new boolean[this.env.config.tableSize][this.env.config.players];
-        this.tokensPerPlayer = new int[this.env.config.players];
+        this.tokens = new boolean[env.config.tableSize][env.config.players];
+        this.tokensPerPlayer = new int[env.config.players];
 
     }
 
@@ -110,7 +110,7 @@ public class Table {
         cardToSlot[card] = slot;
         slotToCard[slot] = card;
 
-        this.env.ui.placeCard(card, slot);
+        env.ui.placeCard(card, slot);
     }
 
     /**
@@ -129,11 +129,11 @@ public class Table {
 
         for (int i = 0; i < tokens[slot].length; i++) {
             if (tokens[slot][i]) {
-                this.removeToken(i, slot);
+                removeToken(i, slot);
             }
         }
 
-        this.env.ui.removeCard(slot);
+        env.ui.removeCard(slot);
     }
 
     /**
@@ -143,13 +143,13 @@ public class Table {
      * @param slot   - the slot on which to place the token.
      */
     public void placeToken(int player, int slot) {
-        if (!this.removeToken(player, slot) // the player did not have a token on this slot
-                && this.tokensPerPlayer[player] < SET_SIZE // the player did not reach the max. num. of tokens
-                && this.slotToCard[slot] != null) // the slot contains a card
+        if (!removeToken(player, slot) // the player did not have a token on this slot
+                && tokensPerPlayer[player] < SET_SIZE // the player did not reach the max. num. of tokens
+                && slotToCard[slot] != null) // the slot contains a card
         {
-            this.env.ui.placeToken(player, slot);
-            this.tokens[slot][player] = true;
-            this.tokensPerPlayer[player]++;
+            env.ui.placeToken(player, slot);
+            tokens[slot][player] = true;
+            tokensPerPlayer[player]++;
         }
     }
 
@@ -161,10 +161,10 @@ public class Table {
      * @return - true iff a token was successfully removed.
      */
     public boolean removeToken(int player, int slot) {
-        if (this.tokens[slot][player]) {
-            this.env.ui.removeToken(player, slot);
-            this.tokens[slot][player] = false;
-            this.tokensPerPlayer[player]--;
+        if (tokens[slot][player]) {
+            env.ui.removeToken(player, slot);
+            tokens[slot][player] = false;
+            tokensPerPlayer[player]--;
 
             return true;
         }

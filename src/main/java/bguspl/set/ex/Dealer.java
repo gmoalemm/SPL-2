@@ -72,9 +72,9 @@ public class Dealer implements Runnable {
         this.players = players;
         this.deck = IntStream.range(0, env.config.deckSize).boxed().collect(Collectors.toList());
         this.dealerSleepLock = new Object();
-        this.freezeTimes = new long[this.players.length];
+        this.freezeTimes = new long[env.config.players];
         this.currentlyPlacingCards = true;
-        this.waitingPlayers = new ArrayBlockingQueue<Integer>(this.env.config.players);
+        this.waitingPlayers = new ArrayBlockingQueue<Integer>(env.config.players);
         this.QSemaphore = new Semaphore(1, true); // allows only one thread at a time an access to the queue
     }
 
@@ -87,7 +87,7 @@ public class Dealer implements Runnable {
 
         // create the player threads and starts them
 
-        for (Player player : this.players) {
+        for (Player player : players) {
             Thread playerThread = new Thread(player);
             playerThread.start();
         }
@@ -108,7 +108,7 @@ public class Dealer implements Runnable {
      * not time out.
      */
     private void timerLoop() {
-        while (!terminate && System.currentTimeMillis() < reshuffleTime && this.table.countCards() != 0) {
+        while (!terminate && System.currentTimeMillis() < reshuffleTime && table.countCards() != 0) {
             sleepUntilWokenOrTimeout();
             updateTimerDisplay(false);
             removeCardsFromTable();
@@ -120,11 +120,11 @@ public class Dealer implements Runnable {
      * Called when the game should be terminated.
      */
     public void terminate() {
-        for (int i = this.env.config.players - 1; i >= 0; i--) {
-            this.players[i].terminate();
+        for (int i = env.config.players - 1; i >= 0; i--) {
+            players[i].terminate();
         }
 
-        this.terminate = true;
+        terminate = true;
     }
 
     /**
@@ -145,18 +145,18 @@ public class Dealer implements Runnable {
         int i;
 
         try {
-            this.QSemaphore.acquire();
+            QSemaphore.acquire();
 
-            while (!this.waitingPlayers.isEmpty()) {
-                currentPlayer = this.waitingPlayers.poll();
+            while (!waitingPlayers.isEmpty()) {
+                currentPlayer = waitingPlayers.poll();
 
                 i = 0; // this is the index of the last placed card in the array
 
                 // find the cards that the current player chose
-                for (int slot = 0; slot < this.env.config.tableSize; slot++) {
+                for (int slot = 0; slot < env.config.tableSize; slot++) {
                     // if the current player placed a token in this slot, add the card to the array
-                    if (this.table.tokens[slot][currentPlayer]) {
-                        currentPlayerCards[i++] = this.table.slotToCard[slot];
+                    if (table.tokens[slot][currentPlayer]) {
+                        currentPlayerCards[i++] = table.slotToCard[slot];
                     }
                 }
 
@@ -164,30 +164,28 @@ public class Dealer implements Runnable {
                 // card that was part of the set this player chos, but made it quicker.
 
                 if (i == 3) {
-                    if (this.env.util.testSet(currentPlayerCards)) {
-                        this.players[currentPlayer].foundSet = Player.LEGAL_SET;
+                    if (env.util.testSet(currentPlayerCards)) {
+                        players[currentPlayer].foundSet = Player.LEGAL_SET;
 
                         for (int card : currentPlayerCards) {
-                            this.table.removeCard(this.table.cardToSlot[card]);
+                            table.removeCard(table.cardToSlot[card]);
                         }
 
-                        this.freezeTimes[currentPlayer] = System.currentTimeMillis()
-                                + this.env.config.pointFreezeMillis;
-                        this.updateTimerDisplay(true);
+                        freezeTimes[currentPlayer] = System.currentTimeMillis() + env.config.pointFreezeMillis;
+                        updateTimerDisplay(true);
                     } else {
-                        this.players[currentPlayer].foundSet = Player.NOT_LEGAL;
-                        this.freezeTimes[currentPlayer] = System.currentTimeMillis()
-                                + this.env.config.penaltyFreezeMillis;
+                        players[currentPlayer].foundSet = Player.NOT_LEGAL;
+                        freezeTimes[currentPlayer] = System.currentTimeMillis() + env.config.penaltyFreezeMillis;
                     }
                 }
 
                 // signal the player that its set has been checked
-                synchronized (this.players[currentPlayer].playerTestLock) {
-                    this.players[currentPlayer].playerTestLock.notify();
+                synchronized (players[currentPlayer].playerTestLock) {
+                    players[currentPlayer].playerTestLock.notify();
                 }
             }
 
-            this.QSemaphore.release();
+            QSemaphore.release();
         } catch (InterruptedException e) {
 
         }
@@ -199,14 +197,14 @@ public class Dealer implements Runnable {
     private void placeCardsOnTable() {
         Collections.shuffle(deck);
 
-        for (int slot = 0; slot < this.env.config.tableSize; slot++) {
-            if (this.table.slotToCard[slot] == null && !this.deck.isEmpty()) {
-                this.table.placeCard(this.deck.remove(0), slot);
+        for (int slot = 0; slot < env.config.tableSize; slot++) {
+            if (table.slotToCard[slot] == null && !deck.isEmpty()) {
+                table.placeCard(deck.remove(0), slot);
             }
         }
 
         // done filling the table
-        this.currentlyPlacingCards = false;
+        currentlyPlacingCards = false;
     }
 
     /**
@@ -215,8 +213,8 @@ public class Dealer implements Runnable {
      */
     private void sleepUntilWokenOrTimeout() {
         try {
-            synchronized (this.dealerSleepLock) {
-                this.dealerSleepLock.wait(BREAK_MILLIS);
+            synchronized (dealerSleepLock) {
+                dealerSleepLock.wait(BREAK_MILLIS);
             }
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -228,20 +226,20 @@ public class Dealer implements Runnable {
      */
     private void updateTimerDisplay(boolean reset) {
         if (reset) {
-            reshuffleTime = System.currentTimeMillis() + this.env.config.turnTimeoutMillis;
-            this.env.ui.setCountdown(this.env.config.turnTimeoutMillis, false);
+            reshuffleTime = System.currentTimeMillis() + env.config.turnTimeoutMillis;
+            env.ui.setCountdown(env.config.turnTimeoutMillis, false);
         } else {
             long timeLeft = reshuffleTime - System.currentTimeMillis();
-            this.env.ui.setCountdown(timeLeft < 0 ? 0 : timeLeft, timeLeft < this.env.config.turnTimeoutWarningMillis);
+            env.ui.setCountdown(timeLeft < 0 ? 0 : timeLeft, timeLeft < env.config.turnTimeoutWarningMillis);
 
-            for (int player = 0; player < this.env.config.players; player++) {
-                if (this.freezeTimes[player] != 0) {
-                    this.env.ui.setFreeze(player, freezeTimes[player] - System.currentTimeMillis());
+            for (int player = 0; player < env.config.players; player++) {
+                if (freezeTimes[player] != 0) {
+                    env.ui.setFreeze(player, freezeTimes[player] - System.currentTimeMillis());
 
                     // if the freeze time has passed, set it to 0 update the UI
-                    if (this.freezeTimes[player] <= System.currentTimeMillis()) {
-                        this.freezeTimes[player] = 0;
-                        this.env.ui.setFreeze(player, 0);
+                    if (freezeTimes[player] <= System.currentTimeMillis()) {
+                        freezeTimes[player] = 0;
+                        env.ui.setFreeze(player, 0);
                     }
                 }
             }
@@ -253,12 +251,12 @@ public class Dealer implements Runnable {
      */
     private void removeAllCardsFromTable() {
         // here, we start updating the table
-        this.currentlyPlacingCards = true;
+        currentlyPlacingCards = true;
 
-        for (int slot = 0; slot < this.env.config.tableSize; slot++) {
-            if (this.table.slotToCard[slot] != null) {
-                this.deck.add(this.table.slotToCard[slot]);
-                this.table.removeCard(slot);
+        for (int slot = 0; slot < env.config.tableSize; slot++) {
+            if (table.slotToCard[slot] != null) {
+                deck.add(table.slotToCard[slot]);
+                table.removeCard(slot);
             }
         }
     }
@@ -290,7 +288,7 @@ public class Dealer implements Runnable {
             }
         }
 
-        this.env.ui.announceWinner(winners);
+        env.ui.announceWinner(winners);
     }
 
     /**
@@ -300,15 +298,15 @@ public class Dealer implements Runnable {
      */
     public void addPlayerToQueue(int id) {
         try {
-            this.QSemaphore.acquire();
+            QSemaphore.acquire();
 
-            this.waitingPlayers.add(id);
+            waitingPlayers.add(id);
 
-            synchronized (this.dealerSleepLock) {
-                this.dealerSleepLock.notify();
+            synchronized (dealerSleepLock) {
+                dealerSleepLock.notify();
             }
 
-            this.QSemaphore.release();
+            QSemaphore.release();
         } catch (InterruptedException e) {
 
         }
