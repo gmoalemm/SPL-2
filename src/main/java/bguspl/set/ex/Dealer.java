@@ -64,6 +64,8 @@ public class Dealer implements Runnable {
     /** A semaphore used to manage the waiting players queue correctly. */
     private Semaphore QSemaphore;
 
+    private static final int BREAK_MILLIS = 25;
+
     public Dealer(Env env, Table table, Player[] players) {
         this.env = env;
         this.table = table;
@@ -84,6 +86,7 @@ public class Dealer implements Runnable {
         env.logger.info("thread " + Thread.currentThread().getName() + " starting.");
 
         // create the player threads and starts them
+
         for (Player player : this.players) {
             Thread playerThread = new Thread(player);
             playerThread.start();
@@ -138,7 +141,7 @@ public class Dealer implements Runnable {
      */
     private void removeCardsFromTable() {
         Integer currentPlayer;
-        int[] currentPlayerCards = new int[3];
+        int[] currentPlayerCards = new int[Table.SET_SIZE];
         int i;
 
         try {
@@ -213,7 +216,7 @@ public class Dealer implements Runnable {
     private void sleepUntilWokenOrTimeout() {
         try {
             synchronized (this.dealerSleepLock) {
-                this.dealerSleepLock.wait(25);
+                this.dealerSleepLock.wait(BREAK_MILLIS);
             }
         } catch (InterruptedException e) {
             e.printStackTrace();

@@ -85,8 +85,10 @@ public class Player implements Runnable {
     protected int foundSet;
 
     public static final int NOT_LEGAL = -1;
-    public static final int LEGAL_SET = 0;
-    public static final int TOO_SLOW = 1;
+    public static final int LEGAL_SET = 1;
+    public static final int NEUTRAL = 0;
+
+    private static final int BOT_BREAK_MILLIS = 500;
 
     /** Is this player waiting to be tested? */
     protected boolean waitingToBeTested;
@@ -117,7 +119,7 @@ public class Player implements Runnable {
 
         this.queueSemaphore = new Semaphore(1, true);
         this.rnd = new Random();
-        this.foundSet = 0;
+        this.foundSet = NEUTRAL;
         this.waitingToBeTested = false;
     }
 
@@ -153,7 +155,7 @@ public class Player implements Runnable {
                     // if the number of tokens changed from 2 to 3,
                     // this is the third token placement and we need to check if the cards form a
                     // legal set
-                    if (oldTokens == 2 && this.table.tokensPerPlayer[this.id] == 3) {
+                    if (oldTokens == Table.SET_SIZE - 1 && this.table.tokensPerPlayer[this.id] == Table.SET_SIZE) {
                         this.waitingToBeTested = true;
                         this.dealer.addPlayerToQueue(id);
                     }
@@ -164,13 +166,11 @@ public class Player implements Runnable {
                         this.playerTestLock.wait();
                         this.waitingToBeTested = false;
 
-                        if (this.foundSet == Player.LEGAL_SET) {
+                        if (this.foundSet == LEGAL_SET) {
                             this.point();
-                        } else if (this.foundSet == Player.NOT_LEGAL) {
+                        } else if (this.foundSet == NOT_LEGAL) {
                             this.penalty();
                         }
-
-                        this.foundSet = TOO_SLOW;
 
                         this.keyPreesesQueue.clear();
                     }
@@ -210,7 +210,7 @@ public class Player implements Runnable {
 
                     this.keyPressed(random);
 
-                    Thread.sleep(500);
+                    Thread.sleep(BOT_BREAK_MILLIS);
                 } catch (InterruptedException ignored) {
                 }
             }
@@ -255,7 +255,7 @@ public class Player implements Runnable {
         int ignored = table.countCards(); // this part is just for demonstration in the unit tests
         this.env.ui.setScore(id, ++score);
         this.env.ui.setFreeze(id, env.config.pointFreezeMillis);
-        this.foundSet = 0;
+        this.foundSet = Player.NEUTRAL;
 
         try {
             Thread.sleep(this.env.config.pointFreezeMillis);
@@ -268,7 +268,7 @@ public class Player implements Runnable {
      */
     public void penalty() {
         this.env.ui.setFreeze(this.id, this.env.config.penaltyFreezeMillis);
-        this.foundSet = 0;
+        this.foundSet = NEUTRAL;
 
         try {
             Thread.sleep(this.env.config.penaltyFreezeMillis);

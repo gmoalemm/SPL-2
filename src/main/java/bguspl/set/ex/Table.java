@@ -35,6 +35,8 @@ public class Table {
     /** An array that holds the number of tokens each player has placed. */
     protected int[] tokensPerPlayer;
 
+    public static final int SET_SIZE = 3;
+
     /**
      * Constructor for testing.
      *
@@ -142,7 +144,7 @@ public class Table {
      */
     public void placeToken(int player, int slot) {
         if (!this.removeToken(player, slot) // the player did not have a token on this slot
-                && this.tokensPerPlayer[player] < 3 // the player did not reach the max. num. of tokens
+                && this.tokensPerPlayer[player] < SET_SIZE // the player did not reach the max. num. of tokens
                 && this.slotToCard[slot] != null) // the slot contains a card
         {
             this.env.ui.placeToken(player, slot);
