@@ -3,6 +3,7 @@ package bguspl.set.ex;
 import bguspl.set.Env;
 
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -34,8 +35,6 @@ public class Table {
 
     /** An array that holds the number of tokens each player has placed. */
     protected int[] tokensPerPlayer;
-
-    public static final int SET_SIZE = 3;
 
     /**
      * Constructor for testing.
@@ -144,7 +143,7 @@ public class Table {
      */
     public void placeToken(int player, int slot) {
         if (!removeToken(player, slot) // the player did not have a token on this slot
-                && tokensPerPlayer[player] < SET_SIZE // the player did not reach the max. num. of tokens
+                && tokensPerPlayer[player] < env.config.featureSize // the player did not reach the max. num. of tokens
                 && slotToCard[slot] != null) // the slot contains a card
         {
             env.ui.placeToken(player, slot);
@@ -170,5 +169,17 @@ public class Table {
         }
 
         return false;
+    }
+
+    public List<Integer> getCardsOnTable() {
+        List<Integer> cardsOnTable = new LinkedList<Integer>();
+
+        for (Integer card : slotToCard) {
+            if (card != null) {
+                cardsOnTable.add(card);
+            }
+        }
+
+        return cardsOnTable;
     }
 }

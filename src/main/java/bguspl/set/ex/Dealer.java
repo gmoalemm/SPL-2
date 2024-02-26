@@ -3,6 +3,7 @@ package bguspl.set.ex;
 import bguspl.set.Env;
 
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -66,6 +67,12 @@ public class Dealer implements Runnable {
 
     private static final int BREAK_MILLIS = 25;
 
+    private final long HINT_TIMER;
+
+    private long hintTime;
+
+    private long lastAction = Long.MAX_VALUE;
+
     public Dealer(Env env, Table table, Player[] players) {
         this.env = env;
         this.table = table;
@@ -76,6 +83,14 @@ public class Dealer implements Runnable {
         this.currentlyPlacingCards = true;
         this.waitingPlayers = new ArrayBlockingQueue<Integer>(env.config.players);
         this.QSemaphore = new Semaphore(1, true); // allows only one thread at a time an access to the queue
+
+        if (env.config.turnTimeoutMillis > 0) {
+            this.HINT_TIMER = env.config.turnTimeoutMillis / 3;
+        } else {
+            this.HINT_TIMER = 30;
+        }
+
+        this.hintTime = Long.MAX_VALUE;
     }
 
     /**
@@ -89,6 +104,7 @@ public class Dealer implements Runnable {
 
         for (Player player : players) {
             Thread playerThread = new Thread(player);
+            playerThread.setName(player.toString());
             playerThread.start();
         }
 
@@ -141,7 +157,7 @@ public class Dealer implements Runnable {
      */
     private void removeCardsFromTable() {
         Integer currentPlayer;
-        int[] currentPlayerCards = new int[Table.SET_SIZE];
+        int[] currentPlayerCards = new int[env.config.featureSize];
         int i;
 
         try {
@@ -196,11 +212,37 @@ public class Dealer implements Runnable {
      */
     private void placeCardsOnTable() {
         Collections.shuffle(deck);
+        boolean placedCards = false;
+        List<int[]> setsCurrentlyOnTable = env.util.findSets(table.getCardsOnTable(), 1);
+        List<Integer> tableWithSets;
 
-        for (int slot = 0; slot < env.config.tableSize; slot++) {
-            if (table.slotToCard[slot] == null && !deck.isEmpty()) {
-                table.placeCard(deck.remove(0), slot);
+        if (env.config.turnTimeoutMillis <= 0 && setsCurrentlyOnTable.isEmpty()) {
+            tableWithSets = getTableWithSet();
+
+            if (tableWithSets.isEmpty()) {
+                terminate = true;
+                return;
+            } else {
+                removeAllCardsFromTable();
+
+                for (int slot = 0; slot < env.config.tableSize; slot++) {
+                    if (table.slotToCard[slot] == null && !deck.isEmpty()) {
+                        table.placeCard(tableWithSets.remove(0), slot);
+                        placedCards = true;
+                    }
+                }
             }
+        } else {
+            for (int slot = 0; slot < env.config.tableSize; slot++) {
+                if (table.slotToCard[slot] == null && !deck.isEmpty()) {
+                    table.placeCard(deck.remove(0), slot);
+                    placedCards = true;
+                }
+            }
+        }
+
+        if (placedCards && env.config.turnTimeoutMillis <= 0) {
+            updateTimerDisplay(true);
         }
 
         // done filling the table
@@ -226,11 +268,22 @@ public class Dealer implements Runnable {
      */
     private void updateTimerDisplay(boolean reset) {
         if (reset) {
-            reshuffleTime = System.currentTimeMillis() + env.config.turnTimeoutMillis;
-            env.ui.setCountdown(env.config.turnTimeoutMillis, false);
+            if (env.config.turnTimeoutMillis <= 0) {
+                lastAction = System.currentTimeMillis();
+                hintTime = lastAction + HINT_TIMER * 1000;
+            } else if (env.config.turnTimeoutMillis > 0) {
+                reshuffleTime = System.currentTimeMillis() + env.config.turnTimeoutMillis;
+                hintTime = reshuffleTime - HINT_TIMER;
+                env.ui.setCountdown(env.config.turnTimeoutMillis, false);
+            }
         } else {
-            long timeLeft = reshuffleTime - System.currentTimeMillis();
-            env.ui.setCountdown(timeLeft < 0 ? 0 : timeLeft, timeLeft < env.config.turnTimeoutWarningMillis);
+            if (env.config.turnTimeoutMillis == 0) {
+                long timePassed = System.currentTimeMillis() - lastAction;
+                env.ui.setElapsed(timePassed);
+            } else if (env.config.turnTimeoutMillis > 0) {
+                long timeLeft = reshuffleTime - System.currentTimeMillis();
+                env.ui.setCountdown(timeLeft < 0 ? 0 : timeLeft, timeLeft < env.config.turnTimeoutWarningMillis);
+            }
 
             for (int player = 0; player < env.config.players; player++) {
                 if (freezeTimes[player] != 0) {
@@ -242,6 +295,11 @@ public class Dealer implements Runnable {
                         env.ui.setFreeze(player, 0);
                     }
                 }
+            }
+
+            if (env.config.hints && System.currentTimeMillis() >= hintTime) {
+                hintTime = Long.MAX_VALUE;
+                printHint();
             }
         }
     }
@@ -289,6 +347,7 @@ public class Dealer implements Runnable {
         }
 
         env.ui.announceWinner(winners);
+        terminate();
     }
 
     /**
@@ -310,5 +369,42 @@ public class Dealer implements Runnable {
         } catch (InterruptedException e) {
 
         }
+    }
+
+    private void printHint() {
+        List<int[]> sets = env.util.findSets(table.getCardsOnTable(), 1);
+        int[] set;
+
+        if (!sets.isEmpty()) {
+            set = sets.get(0);
+
+            System.out.println(
+                    "Hint: look at the slots " + table.cardToSlot[set[0]] + " and " + table.cardToSlot[set[1]]);
+        } else {
+            System.out.println("Hint: no sets on the table!");
+        }
+    }
+
+    /**
+     * @return a new table with at leat one set.
+     */
+    private List<Integer> getTableWithSet() {
+        List<Integer> newTable = new LinkedList<Integer>();
+        List<int[]> sets = env.util.findSets(deck, 1);
+
+        if (sets.isEmpty()) {
+            return newTable;
+        }
+
+        for (int card : sets.get(0)) {
+            newTable.add(card);
+            deck.remove((Integer) card);
+        }
+
+        while (newTable.size() < env.config.tableSize && !deck.isEmpty()) {
+            newTable.add(deck.remove(0));
+        }
+
+        return newTable;
     }
 }

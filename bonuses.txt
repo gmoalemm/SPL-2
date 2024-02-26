@@ -12,13 +12,22 @@ with a short description of:
 
 1. Fully supporting all configuration fields and avoiding the use of magic numbers
 
-We are not entitled to this bonus.
+We avoided using magic numbers in our code, instead, we used the values in "env.config" everywhere when it was possible.
+For other numbers, we initialized final/const members. We modified the config file many times and made sure everything
+ran correctly according to the modified settings.
 
 --------------------
 
 2. Terminating all threads (that you created) gracefully and in reverse order to the order they were created in.
 
-We are not entitled to this bonus.
+We made sure that the threads are init. in the correct order (the first player thread starts first and so on).
+We also made sure that the threads get terminated in a reversed order (to the order they were created in), 
+we did it using a for loop that begins at the last player and ends at the first player.
+The creation happens in Dealer::run and the termination happens in Dealer::terminate (which calls Player::terminate).
+We noticed that the log showed the creation/termination in a wrong order, but realized that it is 
+the logging that happens in that wrong order. 
+We added a flag that indicated that a thread began or ended and waited for it to be 
+raised before doing the next itaeraion in the for loop. Then, the logs occured in the correct order.
 
 --------------------
 
@@ -27,7 +36,12 @@ config.turnTimeoutMillis < 0: display nothing.
 config.turnTimeoutMillis = 0: display a timer since the last action (reshuffle or set collected).
 Note: in modes without a countdown timer the dealer must ensure there is always at least one legal set on the table.
 
-We are not entitled to this bonus.
+We added a member that holds the time of the last action of the dealer.
+We used it to refresh the timer whenever a set was picked or there was no set on the table.
+We added some if statements in methods where it was necessary (for example, Dealer::updateTimerDisplay) to 
+distinguish between the different states. 
+The changes were made only in the Dealer class, in the methods Dealer::updateTimerDisplay, c'tor, Dealer::placeCardsOnTable.
+We tested it by modifying the config file and running the application.
 
 --------------------
 

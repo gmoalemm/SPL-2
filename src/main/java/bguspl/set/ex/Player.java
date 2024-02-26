@@ -34,7 +34,7 @@ public class Player implements Runnable {
     /**
      * The thread representing the current player.
      */
-    private Thread playerThread;
+    public Thread playerThread;
 
     /**
      * The thread of the AI (computer) player (an additional thread used to generate
@@ -131,6 +131,7 @@ public class Player implements Runnable {
     public void run() {
         playerThread = Thread.currentThread();
         env.logger.info("thread " + Thread.currentThread().getName() + " starting.");
+
         Integer slot, oldTokens;
 
         if (!human)
@@ -155,7 +156,8 @@ public class Player implements Runnable {
                     // if the number of tokens changed from 2 to 3,
                     // this is the third token placement and we need to check if the cards form a
                     // legal set
-                    if (oldTokens == Table.SET_SIZE - 1 && table.tokensPerPlayer[id] == Table.SET_SIZE) {
+                    if (oldTokens == env.config.featureSize - 1
+                            && table.tokensPerPlayer[id] == env.config.featureSize) {
                         waitingToBeTested = true;
                         dealer.addPlayerToQueue(id);
                     }
@@ -218,7 +220,6 @@ public class Player implements Runnable {
         }, "computer-" + id);
 
         aiThread.start();
-
     }
 
     /**
@@ -278,5 +279,14 @@ public class Player implements Runnable {
 
     public int score() {
         return score;
+    }
+
+    @Override
+    public String toString() {
+        if (human) {
+            return "Player #" + id;
+        }
+
+        return "Bot #" + id;
     }
 }
