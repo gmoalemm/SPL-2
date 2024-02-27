@@ -1,0 +1,25 @@
+[17:36:54.462] [INFO   ] thread bguspl.set.Main.main() starting.
+[17:36:54.472] [SEVERE ] cannot read configuration file config.properties trying from resources.
+[17:36:54.491] [SEVERE ] configuration file was loaded from resources directory.
+[17:36:55.575] [INFO   ] thread dealer starting.
+[17:36:55.576] [INFO   ] thread dealer starting.
+[17:36:55.581] [INFO   ] thread Bot #0 starting.
+[17:36:55.581] [INFO   ] thread Bot #4 starting.
+[17:36:55.581] [INFO   ] thread Bot #3 starting.
+[17:36:55.581] [INFO   ] thread Bot #2 starting.
+[17:36:55.581] [INFO   ] thread Bot #1 starting.
+[17:37:00.588] [SEVERE ] placing card 31 in slot 0
+[17:37:01.720] [SEVERE ] exit button pressed
+[17:37:01.723] [INFO   ] thread Bot #4 terminated.
+[17:37:01.723] [SEVERE ] placing card 5 in slot 1
+[17:37:01.723] [INFO   ] thread Bot #0 terminated.
+[17:37:01.723] [INFO   ] thread Bot #3 terminated.
+[17:37:01.723] [INFO   ] thread Bot #2 terminated.
+[17:37:01.723] [INFO   ] thread Bot #1 terminated.
+[17:37:01.725] [SEVERE ] announcing winner(s): player 1, player 2, player 3, player 4, player 5
+[17:37:01.725] [INFO   ] thread bot manager starting.
+[17:37:01.727] [INFO   ] thread bot manager terminated.
+[17:37:01.728] [INFO   ] thread dealer terminated.
+[17:37:01.729] [INFO   ] thread dealer terminated.
+[17:37:01.729] [SEVERE ] thanks for playing... it was fun!
+[17:37:01.729] [INFO   ] thread bguspl.set.Main.main() terminated.

@@ -1,0 +1,11 @@
+[17:36:24.752] [INFO   ] thread bguspl.set.Main.main() starting.
+[17:36:24.762] [SEVERE ] cannot read configuration file config.properties trying from resources.
+[17:36:24.769] [SEVERE ] configuration file was loaded from resources directory.
+[17:36:25.800] [INFO   ] thread dealer starting.
+[17:36:25.801] [INFO   ] thread dealer starting.
+[17:36:25.804] [INFO   ] thread Bot #0 starting.
+[17:36:25.805] [INFO   ] thread Bot #3 starting.
+[17:36:25.805] [INFO   ] thread Bot #2 starting.
+[17:36:25.804] [INFO   ] thread Bot #1 starting.
+[17:36:25.805] [INFO   ] thread Bot #4 starting.
+[17:36:26.659] [SEVERE ] key 67 was pressed by player 1

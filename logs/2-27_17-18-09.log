@@ -1,0 +1,35 @@
+[17:18:09.243] [INFO   ] thread bguspl.set.Main.main() starting.
+[17:18:09.253] [SEVERE ] cannot read configuration file config.properties trying from resources.
+[17:18:09.261] [SEVERE ] configuration file was loaded from resources directory.
+[17:18:10.678] [INFO   ] thread dealer starting.
+[17:18:10.680] [INFO   ] thread dealer starting.
+[17:18:10.681] [INFO   ] thread Bot #0 starting.
+[17:18:10.681] [INFO   ] thread Bot #2 starting.
+[17:18:10.681] [INFO   ] thread Bot #1 starting.
+[17:18:10.682] [INFO   ] thread Bot #4 starting.
+[17:18:10.682] [INFO   ] thread Bot #3 starting.
+[17:18:15.682] [SEVERE ] placing card 73 in slot 0
+[17:18:16.363] [SEVERE ] exit button pressed
+[17:18:16.364] [INFO   ] thread Bot #3 terminated.
+[17:18:16.364] [INFO   ] thread Bot #1 terminated.
+[17:18:16.364] [INFO   ] thread Bot #2 terminated.
+[17:18:16.364] [SEVERE ] placing card 28 in slot 1
+[17:18:16.364] [INFO   ] thread Bot #0 terminated.
+[17:18:16.364] [INFO   ] thread Bot #4 terminated.
+[17:18:21.367] [SEVERE ] placing card 75 in slot 2
+[17:18:26.371] [SEVERE ] placing card 11 in slot 3
+[17:18:31.371] [SEVERE ] placing card 51 in slot 4
+[17:18:36.372] [SEVERE ] placing card 72 in slot 5
+[17:18:41.373] [SEVERE ] placing card 24 in slot 6
+[17:18:46.374] [SEVERE ] placing card 65 in slot 7
+[17:18:51.376] [SEVERE ] placing card 13 in slot 8
+[17:18:56.379] [SEVERE ] placing card 16 in slot 9
+[17:19:01.381] [SEVERE ] placing card 79 in slot 10
+[17:19:06.383] [SEVERE ] placing card 71 in slot 11
+[17:19:06.385] [INFO   ] thread bot manager starting.
+[17:19:06.385] [INFO   ] thread bot manager terminated.
+[17:19:06.385] [SEVERE ] announcing winner(s): player 1, player 2, player 3, player 4, player 5
+[17:19:06.388] [INFO   ] thread dealer terminated.
+[17:19:06.388] [INFO   ] thread dealer terminated.
+[17:19:06.389] [SEVERE ] thanks for playing... it was fun!
+[17:19:06.389] [INFO   ] thread bguspl.set.Main.main() terminated.

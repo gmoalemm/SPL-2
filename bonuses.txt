@@ -49,4 +49,10 @@ We tested it by modifying the config file and running the application.
 changed on the display, key input needs to be handled, etc.) and the only threads created by you are:
 1 thread per player + 1 additional thread for non-human players.
 
-We are not entitled to this bonus.
+The dealer wakes up iff there's a player to check or some fixed amount of time has passed. The players wake up iff a keypress was made.
+The bot manager thread wakes up iff there is a bot that can receive new slots. We used locks do to so: 
+in Dealer::sleepUntilWokenOrTimeout, in the bot manager after handing slots to the bots and in the beginning of the player threads.
+We tested it using print statements. 
+For the 2nd part, we created a thread called "the bot manager" that generates random keypresses and hands them over to the bots
+in a random order. Then the bots play exactly like the human players.
+We created this thread in the Dealer class.

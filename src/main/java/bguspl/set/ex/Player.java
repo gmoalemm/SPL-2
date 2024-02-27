@@ -34,7 +34,7 @@ public class Player implements Runnable {
     /**
      * The thread representing the current player.
      */
-    public Thread playerThread;
+    private Thread playerThread;
 
     /**
      * The thread of the AI (computer) player (an additional thread used to generate
@@ -134,9 +134,6 @@ public class Player implements Runnable {
 
         Integer slot, oldTokens;
 
-        if (!human)
-            createArtificialIntelligence();
-
         while (!terminate) {
             try {
                 synchronized (keyPressLock) {
@@ -179,15 +176,22 @@ public class Player implements Runnable {
                 }
 
                 queueSemaphore.release();
+
+                synchronized (dealer.someBotsWantNewCardsLock) {
+                    dealer.someBotsWantNewCards = true;
+                    dealer.someBotsWantNewCardsLock.notify();
+                }
             } catch (InterruptedException e) {
 
             }
         }
-        if (!human)
-            try {
-                aiThread.join();
-            } catch (InterruptedException ignored) {
-            }
+        /*
+         * if (!human)
+         * try {
+         * aiThread.join();
+         * } catch (InterruptedException ignored) {
+         * }
+         */
         env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
     }
 
@@ -217,7 +221,7 @@ public class Player implements Runnable {
                 }
             }
             env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
-        }, "computer-" + id);
+        });
 
         aiThread.start();
     }
@@ -236,7 +240,7 @@ public class Player implements Runnable {
      * @param slot - the slot corresponding to the key pressed.
      */
     public void keyPressed(int slot) {
-        if (!dealer.currentlyPlacingCards && queueSemaphore.tryAcquire()) {
+        if (0 < keyPreesesQueue.remainingCapacity() && !dealer.currentlyPlacingCards && queueSemaphore.tryAcquire()) {
             keyPreesesQueue.add(slot);
             queueSemaphore.release();
         }

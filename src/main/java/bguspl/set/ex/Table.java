@@ -37,6 +37,14 @@ public class Table {
     protected int[] tokensPerPlayer;
 
     /**
+     * Used to lock slots when needed so that a card removal and a token addition
+     * cannot happen simultaneously.
+     */
+    private Object[] slotFlags;
+
+    public Object xPressed;
+
+    /**
      * Constructor for testing.
      *
      * @param env        - the game environment objects.
@@ -51,7 +59,13 @@ public class Table {
         this.cardToSlot = cardToSlot;
         this.tokens = new boolean[env.config.tableSize][env.config.players];
         this.tokensPerPlayer = new int[env.config.players];
+        this.slotFlags = new Object[env.config.tableSize];
 
+        for (int i = 0; i < env.config.tableSize; i++) {
+            this.slotFlags[i] = new Object();
+        }
+
+        this.xPressed = new Object();
     }
 
     /**
@@ -102,7 +116,11 @@ public class Table {
      */
     public void placeCard(int card, int slot) {
         try {
-            Thread.sleep(env.config.tableDelayMillis);
+            synchronized (xPressed) {
+                xPressed.wait(env.config.tableDelayMillis);
+            }
+
+            // Thread.sleep(env.config.tableDelayMillis);
         } catch (InterruptedException ignored) {
         }
 
@@ -119,20 +137,26 @@ public class Table {
      */
     public void removeCard(int slot) {
         try {
-            Thread.sleep(env.config.tableDelayMillis);
+            synchronized (xPressed) {
+                xPressed.wait(env.config.tableDelayMillis);
+            }
+
+            // Thread.sleep(env.config.tableDelayMillis);
         } catch (InterruptedException ignored) {
         }
 
-        cardToSlot[slotToCard[slot]] = null;
-        slotToCard[slot] = null;
+        synchronized (slotFlags[slot]) {
+            cardToSlot[slotToCard[slot]] = null;
+            slotToCard[slot] = null;
 
-        for (int i = 0; i < tokens[slot].length; i++) {
-            if (tokens[slot][i]) {
-                removeToken(i, slot);
+            for (int i = 0; i < tokens[slot].length; i++) {
+                if (tokens[slot][i]) {
+                    removeToken(i, slot);
+                }
             }
-        }
 
-        env.ui.removeCard(slot);
+            env.ui.removeCard(slot);
+        }
     }
 
     /**
@@ -142,13 +166,16 @@ public class Table {
      * @param slot   - the slot on which to place the token.
      */
     public void placeToken(int player, int slot) {
-        if (!removeToken(player, slot) // the player did not have a token on this slot
-                && tokensPerPlayer[player] < env.config.featureSize // the player did not reach the max. num. of tokens
-                && slotToCard[slot] != null) // the slot contains a card
-        {
-            env.ui.placeToken(player, slot);
-            tokens[slot][player] = true;
-            tokensPerPlayer[player]++;
+        synchronized (slotFlags[slot]) {
+            if (!removeToken(player, slot) // the player did not have a token on this slot
+                    && tokensPerPlayer[player] < env.config.featureSize // the player did not reach the max. num. of
+                                                                        // tokens
+                    && slotToCard[slot] != null) // the slot contains a card
+            {
+                env.ui.placeToken(player, slot);
+                tokens[slot][player] = true;
+                tokensPerPlayer[player]++;
+            }
         }
     }
 

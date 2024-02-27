@@ -1,0 +1,19 @@
+[17:23:08.519] [INFO   ] thread bguspl.set.Main.main() starting.
+[17:23:08.527] [SEVERE ] cannot read configuration file config.properties trying from resources.
+[17:23:08.535] [SEVERE ] configuration file was loaded from resources directory.
+[17:23:09.716] [INFO   ] thread dealer starting.
+[17:23:09.718] [INFO   ] thread dealer starting.
+[17:23:09.720] [INFO   ] thread Bot #0 starting.
+[17:23:09.720] [INFO   ] thread Bot #4 starting.
+[17:23:09.720] [INFO   ] thread Bot #3 starting.
+[17:23:09.720] [INFO   ] thread Bot #2 starting.
+[17:23:09.720] [INFO   ] thread Bot #1 starting.
+[17:23:11.463] [SEVERE ] exit button pressed
+[17:23:11.465] [INFO   ] thread Bot #3 terminated.
+[17:23:11.465] [SEVERE ] placing card 7 in slot 0
+[17:23:11.465] [INFO   ] thread Bot #0 terminated.
+[17:23:11.465] [INFO   ] thread Bot #4 terminated.
+[17:23:11.465] [INFO   ] thread Bot #2 terminated.
+[17:23:11.465] [INFO   ] thread Bot #1 terminated.
+[17:23:16.467] [SEVERE ] placing card 19 in slot 1
+[17:23:21.468] [SEVERE ] placing card 26 in slot 2

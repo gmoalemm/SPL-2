@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.stream.Collectors;
@@ -65,13 +66,26 @@ public class Dealer implements Runnable {
     /** A semaphore used to manage the waiting players queue correctly. */
     private Semaphore QSemaphore;
 
+    /** A pause between itaration of the timerloop manager in ms. */
     private static final int BREAK_MILLIS = 25;
 
+    /** Used to determine the time for the next hint. */
     private final long HINT_TIMER;
 
+    /** The time to give the next hint. */
     private long hintTime;
 
+    /** When was the last action made? */
     private long lastAction = Long.MAX_VALUE;
+
+    public Thread botManagerThread;
+
+    /** A pause between itaration of the bot manager in ms. */
+    private static final int BOT_BREAK_MILLIS = 0;
+
+    public Boolean someBotsWantNewCards;
+
+    public Object someBotsWantNewCardsLock;
 
     public Dealer(Env env, Table table, Player[] players) {
         this.env = env;
@@ -85,12 +99,18 @@ public class Dealer implements Runnable {
         this.QSemaphore = new Semaphore(1, true); // allows only one thread at a time an access to the queue
 
         if (env.config.turnTimeoutMillis > 0) {
+            // give a hint HINT_TIMER seconds before reshuffling
             this.HINT_TIMER = env.config.turnTimeoutMillis / 3;
         } else {
+            // give a hint HINT_TIMER seconds afer the last action
             this.HINT_TIMER = 30;
         }
 
         this.hintTime = Long.MAX_VALUE;
+
+        this.someBotsWantNewCards = false;
+
+        this.someBotsWantNewCardsLock = new Object();
     }
 
     /**
@@ -106,6 +126,12 @@ public class Dealer implements Runnable {
             Thread playerThread = new Thread(player);
             playerThread.setName(player.toString());
             playerThread.start();
+        }
+
+        if (env.config.computerPlayers > 0) {
+            // place cards and begin using the bots
+            placeCardsOnTable();
+            createBotManager();
         }
 
         while (!shouldFinish()) {
@@ -141,6 +167,13 @@ public class Dealer implements Runnable {
         }
 
         terminate = true;
+
+        if (botManagerThread != null)
+            botManagerThread.interrupt();
+
+        synchronized (table.xPressed) {
+            table.xPressed.notify();
+        }
     }
 
     /**
@@ -216,16 +249,19 @@ public class Dealer implements Runnable {
         List<int[]> setsCurrentlyOnTable = env.util.findSets(table.getCardsOnTable(), 1);
         List<Integer> tableWithSets;
 
+        // if there's no timer, then it is not allowed to generate a oard without a set
+        // in it
         if (env.config.turnTimeoutMillis <= 0 && setsCurrentlyOnTable.isEmpty()) {
             tableWithSets = getTableWithSet();
 
+            // no sets left
             if (tableWithSets.isEmpty()) {
                 terminate = true;
                 return;
             } else {
                 removeAllCardsFromTable();
 
-                for (int slot = 0; slot < env.config.tableSize; slot++) {
+                for (int slot = 0; slot < env.config.tableSize && !shouldFinish(); slot++) {
                     if (table.slotToCard[slot] == null && !deck.isEmpty()) {
                         table.placeCard(tableWithSets.remove(0), slot);
                         placedCards = true;
@@ -233,7 +269,7 @@ public class Dealer implements Runnable {
                 }
             }
         } else {
-            for (int slot = 0; slot < env.config.tableSize; slot++) {
+            for (int slot = 0; slot < env.config.tableSize && !shouldFinish(); slot++) {
                 if (table.slotToCard[slot] == null && !deck.isEmpty()) {
                     table.placeCard(deck.remove(0), slot);
                     placedCards = true;
@@ -247,6 +283,11 @@ public class Dealer implements Runnable {
 
         // done filling the table
         currentlyPlacingCards = false;
+
+        synchronized (someBotsWantNewCardsLock) {
+            someBotsWantNewCards = true;
+            someBotsWantNewCardsLock.notify();
+        }
     }
 
     /**
@@ -311,7 +352,7 @@ public class Dealer implements Runnable {
         // here, we start updating the table
         currentlyPlacingCards = true;
 
-        for (int slot = 0; slot < env.config.tableSize; slot++) {
+        for (int slot = 0; slot < env.config.tableSize && !shouldFinish(); slot++) {
             if (table.slotToCard[slot] != null) {
                 deck.add(table.slotToCard[slot]);
                 table.removeCard(slot);
@@ -406,5 +447,47 @@ public class Dealer implements Runnable {
         }
 
         return newTable;
+    }
+
+    private void createBotManager() {
+        botManagerThread = new Thread(() -> {
+            env.logger.info("thread bot manager starting.");
+
+            List<Integer> botIndices = IntStream.range(
+                    env.config.humanPlayers, env.config.players).boxed().collect(Collectors.toList());
+            Random rnd = new Random();
+            Integer randSlot;
+
+            while (!terminate) {
+                // shuffle the bots so that the process will be fair
+                Collections.shuffle(botIndices);
+
+                someBotsWantNewCards = false;
+
+                for (Integer i : botIndices) {
+                    randSlot = rnd.nextInt(env.config.tableSize);
+
+                    if (table.slotToCard[randSlot] != null) {
+                        players[i].keyPressed(randSlot);
+                    }
+                }
+
+                try {
+                    Thread.sleep(BOT_BREAK_MILLIS);
+
+                    synchronized (someBotsWantNewCardsLock) {
+                        if (!someBotsWantNewCards && !terminate) {
+                            someBotsWantNewCardsLock.wait();
+                        }
+                    }
+                } catch (InterruptedException e) {
+
+                }
+            }
+
+            env.logger.info("thread Bot Manager terminated.");
+        });
+
+        botManagerThread.start();
     }
 }
